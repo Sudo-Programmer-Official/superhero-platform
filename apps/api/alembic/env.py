@@ -13,7 +13,7 @@ if config.config_file_name is not None:
 
 # Alembic uses ConfigParser interpolation, so literal '%' in encoded URLs
 # (for example password '%21') must be escaped as '%%' before assignment.
-config.set_main_option("sqlalchemy.url", settings.database_url_sync.replace("%", "%%"))
+config.set_main_option("sqlalchemy.url", settings.database_url_sync_resolved.replace("%", "%%"))
 
 target_metadata = Base.metadata
 

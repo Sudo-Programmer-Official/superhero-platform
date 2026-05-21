@@ -24,5 +24,38 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    @staticmethod
+    def _clean_url(value: str) -> str:
+        # Deploy env UIs/copy-paste can introduce wrappers or dangling chars.
+        url = value.strip().strip("'").strip('"').strip("`")
+
+        # Repeatedly unwrap balanced outer delimiters.
+        while len(url) >= 2 and (
+            (url[0], url[-1]) in {("(", ")"), ("[", "]"), ("{", "}"), ("<", ">")}
+        ):
+            url = url[1:-1].strip()
+
+        # Handle common accidental trailing characters in env values.
+        url = url.rstrip(");")
+        return url
+
+    @property
+    def database_url_async(self) -> str:
+        url = self._clean_url(self.database_url)
+        if url.startswith("postgres://"):
+            return "postgresql+asyncpg://" + url[len("postgres://") :]
+        if url.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + url[len("postgresql://") :]
+        return url
+
+    @property
+    def database_url_sync_resolved(self) -> str:
+        url = self._clean_url(self.database_url_sync or self.database_url)
+        if url.startswith("postgres://"):
+            return "postgresql://" + url[len("postgres://") :]
+        if url.startswith("postgresql+asyncpg://"):
+            return "postgresql://" + url[len("postgresql+asyncpg://") :]
+        return url
+
 
 settings = Settings()
