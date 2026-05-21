@@ -18,36 +18,133 @@ body {
 
 .app-shell {
   min-height: 100dvh;
-  padding: 1rem;
+  padding: 0;
   position: relative;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
+  overflow-x: clip;
 }
 
 .bg-orb { position: absolute; border-radius: 999px; filter: blur(60px); opacity: .28; }
 .bg-orb-a { width: 220px; height: 220px; top: -40px; right: -30px; background: #f4c97d; }
 .bg-orb-b { width: 260px; height: 260px; bottom: -80px; left: -60px; background: #4ab8ff; }
 
-.phone-frame {
-  width: min(100%, 430px);
-  min-height: 86vh;
-  border-radius: 2rem;
-  padding: 1rem;
-  background: linear-gradient(170deg, #101a2a, #0f1726 45%, #0a121f);
-  border: 1px solid #24354f;
-  box-shadow: 0 24px 48px rgba(0,0,0,.38);
+.layout-shell {
+  min-height: calc(100dvh - var(--safe-top));
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: .8rem;
+  grid-template-rows: auto 1fr;
+}
+
+.auth-layout {
+  min-height: calc(100dvh - var(--safe-top));
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.content-wrap {
+  width: min(1120px, 100% - 1.5rem);
+  margin-inline: auto;
+}
+
+.auth-header {
+  padding: 1rem 0 .5rem;
+}
+
+.auth-home-link {
+  text-decoration: none;
+}
+
+.auth-main {
+  width: min(720px, 100% - 1.5rem);
+  padding: .2rem 0 calc(5.2rem + var(--safe-bottom));
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(10,17,29,.94), rgba(10,17,29,.7));
+  border-bottom: 1px solid #233650;
+}
+
+.app-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: .9rem 0 .85rem;
+}
+
+.app-title {
+  margin: .22rem 0 .25rem;
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
+  line-height: 1.15;
+}
+
+.app-body {
+  width: min(1200px, 100% - 1.5rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .9rem;
+  align-items: start;
+  padding: .9rem 0 calc(5.2rem + var(--safe-bottom));
+}
+
+.app-main {
+  min-width: 0;
+}
+
+.app-nav-mobile {
+  position: fixed;
+  z-index: 20;
+  left: .75rem;
+  right: .75rem;
+  bottom: max(.5rem, var(--safe-bottom));
+  background: rgba(20,31,47,.9);
+  border: 1px solid #2a4062;
+  border-radius: .95rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: .25rem;
+  gap: .3rem;
+  backdrop-filter: blur(10px);
+}
+
+.app-nav-desktop {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .app-body {
+    grid-template-columns: 220px 1fr;
+    gap: 1rem;
+    padding-bottom: 1.2rem;
+  }
+
+  .app-nav-mobile {
+    display: none;
+  }
+
+  .app-nav-desktop {
+    display: grid;
+    align-content: start;
+    gap: .35rem;
+    background: rgba(18,27,42,.62);
+    border: 1px solid #2a4062;
+    border-radius: 1rem;
+    padding: .5rem;
+    position: sticky;
+    top: calc(5.4rem + var(--safe-top));
+  }
+
+  .auth-main {
+    padding-bottom: 1rem;
+  }
 }
 
 .zone { animation: rise .45s ease both; }
-.zone-topbar { display: flex; justify-content: space-between; align-items: center; }
 .eyebrow { margin: 0; font-size: .67rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
 .ghost-btn { background: transparent; color: var(--muted); border: 1px solid #2a3f5f; border-radius: 999px; padding: .35rem .7rem; }
 
-.zone-hero h1 { margin: .35rem 0 .4rem; font-size: 1.65rem; line-height: 1.18; }
 .kicker { margin: 0; font-size: .8rem; color: #8ab3e6; }
 .subtitle { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.35; }
 
@@ -63,18 +160,12 @@ body {
 .deal-title { margin: 0; font-size: 1rem; }
 .deal-price { margin: .55rem 0 0; color: var(--accent); font-size: 1.3rem; font-weight: 600; }
 
-.zone-bottom-nav {
-  background: rgba(20,31,47,.86);
-  border: 1px solid #2a4062;
-  border-radius: .95rem;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  padding: .25rem .25rem calc(.25rem + var(--safe-bottom));
-  gap: .3rem;
-}
 .nav-btn {
   border: 0;
   background: transparent;
+  display: inline-flex;
+  justify-content: center;
+  text-decoration: none;
   color: var(--muted);
   padding: .6rem .1rem;
   border-radius: .7rem;

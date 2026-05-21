@@ -4,6 +4,11 @@
   "version": "0.1.0",
   "packageManager": "pnpm@10.27.0",
   "scripts": {
+    "dev:stack": "bash ./scripts/dev-stack.sh",
+    "check:env:api": "bash ./scripts/validate-env.sh api",
+    "check:env:web": "bash ./scripts/validate-env.sh web",
+    "test:api": "cd apps/api && pytest -q",
+    "test:web:smoke": "pnpm --filter @superhero/web test:smoke",
     "dev:web": "pnpm --filter @superhero/web dev",
     "dev:admin": "pnpm --filter @superhero/admin dev",
     "build:web": "pnpm --filter @superhero/web build",

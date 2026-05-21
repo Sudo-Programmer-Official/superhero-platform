@@ -2,7 +2,7 @@
 
 ## Web/Admin (Vercel)
 Required env vars:
-- `VITE_API_BASE`
+- `VITE_API_URL`
 - `VITE_FIREBASE_API_KEY`
 - `VITE_FIREBASE_AUTH_DOMAIN`
 - `VITE_FIREBASE_PROJECT_ID`
@@ -25,6 +25,7 @@ Required env vars:
 - `STRIPE_CONNECT_CLIENT_ID`
 - `STRIPE_COUNTRY`
 - `PAYMENTS_TEST_MODE`
+- `STARTUP_VALIDATION_STRICT`
 
 ## Rule
 - Keep var names stable across environments.

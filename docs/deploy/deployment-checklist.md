@@ -66,3 +66,30 @@ curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application
   -d '{"folder":"deals","filename":"cover.jpg","content_type":"image/jpeg","content_length":12345}' \
   "$API/api/v1/storage/presign-upload"
 ```
+
+## 5) GitHub Actions deployment preflight (required)
+Configure these repository secrets so `quality-gates.yml` can validate deploy contracts on every `main` push.
+
+Render/API secrets:
+- `RENDER_DATABASE_URL`
+- `RENDER_DATABASE_URL_SYNC`
+- `RENDER_DB_SCHEMA`
+- `RENDER_CORS_ORIGINS`
+- `RENDER_FIREBASE_PROJECT_ID`
+- `RENDER_AWS_REGION`
+- `RENDER_S3_BUCKET`
+- `RENDER_S3_PREFIX`
+- `RENDER_LOG_LEVEL`
+- `RENDER_LOG_FORMAT`
+- `RENDER_PAYMENTS_TEST_MODE`
+- `RENDER_STRIPE_SECRET_KEY`
+- `RENDER_STRIPE_WEBHOOK_SECRET`
+
+Vercel/Web secrets:
+- `VERCEL_VITE_API_URL`
+- `VERCEL_VITE_FIREBASE_API_KEY`
+- `VERCEL_VITE_FIREBASE_AUTH_DOMAIN`
+- `VERCEL_VITE_FIREBASE_PROJECT_ID`
+- `VERCEL_VITE_FIREBASE_STORAGE_BUCKET`
+- `VERCEL_VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VERCEL_VITE_FIREBASE_APP_ID`

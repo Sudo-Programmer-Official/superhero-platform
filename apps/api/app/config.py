@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     stripe_connect_client_id: str = ""
     stripe_country: str = "US"
     payments_test_mode: bool = False
+    startup_validation_strict: bool = True
     log_level: str = "INFO"
     log_format: str = "json"
 
@@ -60,6 +61,27 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def required_env_keys(self) -> list[str]:
+        keys = [
+            "DATABASE_URL",
+            "DB_SCHEMA",
+            "CORS_ORIGINS",
+            "FIREBASE_PROJECT_ID",
+            "AWS_REGION",
+            "S3_BUCKET",
+            "S3_PREFIX",
+            "LOG_LEVEL",
+        ]
+        if not self.payments_test_mode:
+            keys.extend(
+                [
+                    "STRIPE_SECRET_KEY",
+                    "STRIPE_WEBHOOK_SECRET",
+                ]
+            )
+        return keys
 
 
 settings = Settings()
