@@ -1,0 +1,77 @@
+from uuid import UUID
+
+from fastapi import HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth.types import AuthPrincipal
+from app.models import DealCard
+from app.repositories.deal_card_repository import DealCardRepository
+from app.repositories.practitioner_repository import PractitionerRepository
+from app.schemas.deal_card import DealCardCreate, DealCardUpdate
+
+
+class DealCardService:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.repo = DealCardRepository(session)
+        self.practitioner_repo = PractitionerRepository(session)
+
+    async def list_deals(self) -> list[DealCard]:
+        return await self.repo.list_all()
+
+    async def create_deal(self, payload: DealCardCreate, principal: AuthPrincipal) -> DealCard:
+        practitioner = await self.practitioner_repo.get(payload.practitioner_id)
+        if not practitioner:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practitioner not found")
+
+        if principal.role == "practitioner" and practitioner.firebase_uid != principal.uid:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot create deal for another practitioner")
+
+        model = DealCard(
+            practitioner_id=payload.practitioner_id,
+            title=payload.title,
+            description=payload.description,
+            image=payload.image,
+            price=payload.price,
+            capacity=payload.capacity,
+            remaining_slots=payload.capacity,
+            location=payload.location,
+            start_time=payload.start_time,
+            end_time=payload.end_time,
+            expiration_time=payload.expiration_time,
+            share_link=payload.share_link,
+            wallet_enabled=payload.wallet_enabled,
+        )
+        created = await self.repo.create(model)
+        await self.session.commit()
+        return created
+
+    async def update_deal(self, deal_id: UUID, payload: DealCardUpdate, principal: AuthPrincipal) -> DealCard:
+        model = await self.repo.get(deal_id)
+        if not model:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deal not found")
+
+        if principal.role == "practitioner":
+            practitioner = await self.practitioner_repo.get(model.practitioner_id)
+            if not practitioner or practitioner.firebase_uid != principal.uid:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot modify this deal")
+
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(model, field, value)
+
+        await self.session.commit()
+        await self.session.refresh(model)
+        return model
+
+    async def delete_deal(self, deal_id: UUID, principal: AuthPrincipal) -> None:
+        model = await self.repo.get(deal_id)
+        if not model:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deal not found")
+
+        if principal.role == "practitioner":
+            practitioner = await self.practitioner_repo.get(model.practitioner_id)
+            if not practitioner or practitioner.firebase_uid != principal.uid:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot delete this deal")
+
+        await self.repo.delete(model)
+        await self.session.commit()

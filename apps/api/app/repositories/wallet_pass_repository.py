@@ -1,0 +1,29 @@
+from uuid import UUID
+
+from sqlalchemy import Select, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models import WalletPass
+
+
+class WalletPassRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def list_all(self) -> list[WalletPass]:
+        stmt: Select[tuple[WalletPass]] = select(WalletPass).order_by(WalletPass.created_at.desc())
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get(self, wallet_pass_id: UUID) -> WalletPass | None:
+        return await self.session.get(WalletPass, wallet_pass_id)
+
+    async def get_by_qr_code(self, qr_code: str) -> WalletPass | None:
+        stmt: Select[tuple[WalletPass]] = select(WalletPass).where(WalletPass.qr_code == qr_code)
+        return await self.session.scalar(stmt)
+
+    async def create(self, model: WalletPass) -> WalletPass:
+        self.session.add(model)
+        await self.session.flush()
+        await self.session.refresh(model)
+        return model

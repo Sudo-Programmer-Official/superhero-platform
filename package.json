@@ -1,0 +1,12 @@
+{
+  "name": "superhero-platform",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.27.0",
+  "scripts": {
+    "dev:web": "pnpm --filter @superhero/web dev",
+    "dev:admin": "pnpm --filter @superhero/admin dev",
+    "build:web": "pnpm --filter @superhero/web build",
+    "build:admin": "pnpm --filter @superhero/admin build"
+  }
+}
