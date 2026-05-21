@@ -57,5 +57,9 @@ class Settings(BaseSettings):
             return "postgresql://" + url[len("postgresql+asyncpg://") :]
         return url
 
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
 
 settings = Settings()
