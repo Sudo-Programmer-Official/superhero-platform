@@ -3,7 +3,7 @@ import logging
 import sys
 from datetime import datetime, timezone
 
-from .context import request_id_ctx
+from .context import request_id_ctx, tenant_id_ctx
 
 
 class JsonFormatter(logging.Formatter):
@@ -14,6 +14,7 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
             "request_id": getattr(record, "request_id", "") or request_id_ctx.get(),
+            "tenant_id": getattr(record, "tenant_id", "") or tenant_id_ctx.get(),
         }
         if hasattr(record, "event"):
             payload["event"] = record.event
@@ -34,6 +35,8 @@ class RequestContextFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if not hasattr(record, "request_id"):
             record.request_id = request_id_ctx.get()
+        if not hasattr(record, "tenant_id"):
+            record.tenant_id = tenant_id_ctx.get()
         return True
 
 

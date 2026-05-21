@@ -8,6 +8,7 @@ Required env vars:
 - `VITE_FIREBASE_PROJECT_ID`
 - `VITE_FIREBASE_APP_ID`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_PAYMENTS_TEST_MODE`
 
 ## API (Render)
 Required env vars:
@@ -22,6 +23,8 @@ Required env vars:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_CONNECT_CLIENT_ID`
+- `STRIPE_COUNTRY`
+- `PAYMENTS_TEST_MODE`
 
 ## Rule
 - Keep var names stable across environments.

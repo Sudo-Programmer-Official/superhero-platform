@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_principal, require_roles
@@ -25,3 +25,13 @@ async def stripe_connect_status(
     session: AsyncSession = Depends(get_db_session),
 ):
     return await StripeConnectService(session).get_status(principal)
+
+
+@router.post("/webhook")
+async def stripe_connect_webhook(
+    request: Request,
+    stripe_signature: str | None = Header(default=None, alias="stripe-signature"),
+    session: AsyncSession = Depends(get_db_session),
+):
+    payload = await request.body()
+    return await StripeConnectService(session).handle_webhook_event(payload, stripe_signature)

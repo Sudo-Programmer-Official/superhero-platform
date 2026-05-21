@@ -25,6 +25,7 @@ class WalletPassRead(BaseModel):
     deal_id: UUID
     customer_id: UUID
     qr_code: str
+    source_checkout_session_id: str | None
     status: str
     redeemed_at: datetime | None
     wallet_type: str

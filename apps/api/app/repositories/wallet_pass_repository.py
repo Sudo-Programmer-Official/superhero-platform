@@ -22,6 +22,12 @@ class WalletPassRepository:
         stmt: Select[tuple[WalletPass]] = select(WalletPass).where(WalletPass.qr_code == qr_code)
         return await self.session.scalar(stmt)
 
+    async def get_by_checkout_session_id(self, checkout_session_id: str) -> WalletPass | None:
+        stmt: Select[tuple[WalletPass]] = select(WalletPass).where(
+            WalletPass.source_checkout_session_id == checkout_session_id
+        )
+        return await self.session.scalar(stmt)
+
     async def create(self, model: WalletPass) -> WalletPass:
         self.session.add(model)
         await self.session.flush()

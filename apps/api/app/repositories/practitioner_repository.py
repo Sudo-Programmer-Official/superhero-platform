@@ -22,6 +22,10 @@ class PractitionerRepository:
         stmt: Select[tuple[Practitioner]] = select(Practitioner).where(Practitioner.firebase_uid == firebase_uid)
         return await self.session.scalar(stmt)
 
+    async def get_by_stripe_account_id(self, stripe_account_id: str) -> Practitioner | None:
+        stmt: Select[tuple[Practitioner]] = select(Practitioner).where(Practitioner.stripe_account_id == stripe_account_id)
+        return await self.session.scalar(stmt)
+
     async def create(self, model: Practitioner) -> Practitioner:
         self.session.add(model)
         await self.session.flush()

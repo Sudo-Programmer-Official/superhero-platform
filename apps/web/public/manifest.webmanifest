@@ -1,0 +1,17 @@
+{
+  "name": "Superhero Platform",
+  "short_name": "Superhero",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a111d",
+  "theme_color": "#0a111d",
+  "description": "Mobile-first practitioner and deal platform",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

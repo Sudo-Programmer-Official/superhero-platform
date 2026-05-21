@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     s3_bucket: str = "openmat-media-prod"
     s3_prefix: str = "superhero-platform"
     s3_presign_expires_seconds: int = 900
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_connect_client_id: str = ""
+    stripe_country: str = "US"
+    payments_test_mode: bool = False
     log_level: str = "INFO"
     log_format: str = "json"
 

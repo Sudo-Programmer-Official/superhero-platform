@@ -28,19 +28,29 @@ Backend API controls:
 - key generation
 - folder validation
 - ownership binding
-- MIME/type handling
+- MIME/type and size policy checks
 - signed URL issuance
+- final metadata binding to domain records
 
 ## API Contract
-- `POST /api/v1/storage/presign-upload`
-- Request fields:
-  - `folder`: one of `practitioners | deals | wallet-assets | branding | temp`
+1. `POST /api/v1/storage/presign-upload`
+- Request:
+  - `folder`: `practitioners | deals | wallet-assets | branding | temp`
   - `filename`
-- Response fields:
+  - `content_type`
+  - `content_length`
+- Response:
   - `object_key`
   - `upload_url`
   - `content_type`
   - `expires_in`
+  - `max_content_length`
+
+2. `POST /api/v1/storage/finalize-asset`
+- Binds uploaded key to domain models with ownership checks.
+- Current targets:
+  - `practitioner.profile_image`
+  - `deal_card.image`
 
 ## Environment Variables
 - `AWS_REGION=us-east-1`

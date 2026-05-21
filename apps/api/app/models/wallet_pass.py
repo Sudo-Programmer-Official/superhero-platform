@@ -14,6 +14,7 @@ class WalletPass(Base):
     deal_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("deal_cards.id", ondelete="CASCADE"), nullable=False)
     customer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
     qr_code: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+    source_checkout_session_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="issued", nullable=False)
     redeemed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     wallet_type: Mapped[str] = mapped_column(String(32), default="apple", nullable=False)
