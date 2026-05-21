@@ -26,6 +26,10 @@ class PractitionerRepository:
         stmt: Select[tuple[Practitioner]] = select(Practitioner).where(Practitioner.stripe_account_id == stripe_account_id)
         return await self.session.scalar(stmt)
 
+    async def get_by_slug(self, slug: str) -> Practitioner | None:
+        stmt: Select[tuple[Practitioner]] = select(Practitioner).where(Practitioner.slug == slug)
+        return await self.session.scalar(stmt)
+
     async def create(self, model: Practitioner) -> Practitioner:
         self.session.add(model)
         await self.session.flush()

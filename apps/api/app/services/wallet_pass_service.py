@@ -80,3 +80,20 @@ class WalletPassService:
         await self.session.commit()
         await self.session.refresh(model)
         return model
+
+    async def restore_wallet_pass(self, wallet_pass_id: UUID, principal: AuthPrincipal) -> WalletPass:
+        if principal.role not in {"super_admin", "admin", "practitioner"}:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role cannot restore wallet pass")
+
+        model = await self.repo.get(wallet_pass_id)
+        if not model:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Wallet pass not found")
+
+        if model.status not in {"expired", "inactive", "redeemed"}:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Wallet pass is already active")
+
+        model.status = "issued"
+        model.redeemed_at = None
+        await self.session.commit()
+        await self.session.refresh(model)
+        return model

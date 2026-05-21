@@ -20,6 +20,23 @@ async def list_deal_cards(
     return await DealCardService(session).list_deals()
 
 
+@router.get("/public/{practitioner_slug}", response_model=list[DealCardRead])
+async def list_public_deals(
+    practitioner_slug: str,
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await DealCardService(session).list_public_deals_for_practitioner(practitioner_slug)
+
+
+@router.get("/public/{practitioner_slug}/{deal_slug}", response_model=DealCardRead)
+async def get_public_deal(
+    practitioner_slug: str,
+    deal_slug: str,
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await DealCardService(session).get_public_deal(practitioner_slug, deal_slug)
+
+
 @router.post("", response_model=DealCardRead, status_code=status.HTTP_201_CREATED)
 async def create_deal_card(
     payload: DealCardCreate,

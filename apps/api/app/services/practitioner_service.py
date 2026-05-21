@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Practitioner
 from app.repositories.practitioner_repository import PractitionerRepository
 from app.schemas.practitioner import PractitionerCreate, PractitionerUpdate
+from app.utils.slug import slugify
 
 
 class PractitionerService:
@@ -17,12 +18,21 @@ class PractitionerService:
         return await self.repo.list_all()
 
     async def create_practitioner(self, payload: PractitionerCreate, firebase_uid: str | None) -> Practitioner:
+        base_slug = slugify(payload.name)
+        slug = base_slug
+        i = 1
+        while await self.repo.get_by_slug(slug):
+            i += 1
+            slug = f"{base_slug}-{i}"
+
         model = Practitioner(
             name=payload.name,
+            slug=slug,
             bio=payload.bio,
             profile_image=payload.profile_image,
             location=payload.location,
             firebase_uid=firebase_uid,
+            is_public=True,
         )
         created = await self.repo.create(model)
         await self.session.commit()
@@ -38,6 +48,12 @@ class PractitionerService:
 
         await self.session.commit()
         await self.session.refresh(model)
+        return model
+
+    async def get_public_practitioner(self, slug: str) -> Practitioner:
+        model = await self.repo.get_by_slug(slug)
+        if not model or not model.is_public:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practitioner not found")
         return model
 
     async def delete_practitioner(self, practitioner_id: UUID) -> None:

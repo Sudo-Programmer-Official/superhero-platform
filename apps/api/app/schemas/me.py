@@ -10,6 +10,7 @@ class MeResponse(BaseModel):
     role: str
     practitioner_id: UUID | None = None
     practitioner_name: str | None = None
+    practitioner_slug: str | None = None
 
 
 class BootstrapPractitionerRequest(BaseModel):

@@ -5,6 +5,8 @@ import AuthView from "../views/AuthView.vue";
 import DealsView from "../views/DealsView.vue";
 import HomeView from "../views/HomeView.vue";
 import ProfileView from "../views/ProfileView.vue";
+import PublicProfileView from "../views/PublicProfileView.vue";
+import PublicDealView from "../views/PublicDealView.vue";
 import { initSessionWatcher, sessionState } from "../stores/session";
 import { evaluateRouteGuard } from "./guard";
 
@@ -13,6 +15,16 @@ initSessionWatcher();
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: "/openmat/:practitionerSlug",
+      name: "public-profile",
+      component: PublicProfileView
+    },
+    {
+      path: "/openmat/:practitionerSlug/:dealSlug",
+      name: "public-deal",
+      component: PublicDealView
+    },
     {
       path: "/",
       component: AppLayout,

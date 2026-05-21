@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.types import AuthPrincipal
 from app.models import Practitioner
 from app.schemas.me import BootstrapPractitionerRequest, BootstrapPractitionerResponse, MeResponse
+from app.utils.slug import slugify
 
 
 class MeService:
@@ -21,6 +22,7 @@ class MeService:
             role=principal.role,
             practitioner_id=practitioner.id if practitioner else None,
             practitioner_name=practitioner.name if practitioner else None,
+            practitioner_slug=practitioner.slug if practitioner else None,
         )
 
     async def bootstrap_practitioner(
@@ -33,12 +35,21 @@ class MeService:
         if existing:
             return BootstrapPractitionerResponse(practitioner_id=existing.id, created_at=existing.created_at)
 
+        base_slug = slugify(payload.name)
+        slug = base_slug
+        i = 1
+        while await self.session.scalar(select(Practitioner).where(Practitioner.slug == slug)):
+            i += 1
+            slug = f"{base_slug}-{i}"
+
         model = Practitioner(
             name=payload.name,
+            slug=slug,
             bio=payload.bio,
             profile_image=payload.profile_image,
             location=payload.location,
             firebase_uid=principal.uid,
+            is_public=True,
         )
         self.session.add(model)
         await self.session.commit()

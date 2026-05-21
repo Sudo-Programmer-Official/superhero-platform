@@ -18,6 +18,10 @@ class WalletPassExpireRequest(BaseModel):
     reason: str | None = None
 
 
+class WalletPassRestoreRequest(BaseModel):
+    reason: str | None = None
+
+
 class WalletPassRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

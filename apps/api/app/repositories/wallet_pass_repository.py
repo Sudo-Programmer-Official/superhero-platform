@@ -28,6 +28,11 @@ class WalletPassRepository:
         )
         return await self.session.scalar(stmt)
 
+    async def list_by_deal_id(self, deal_id: UUID) -> list[WalletPass]:
+        stmt: Select[tuple[WalletPass]] = select(WalletPass).where(WalletPass.deal_id == deal_id)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def create(self, model: WalletPass) -> WalletPass:
         self.session.add(model)
         await self.session.flush()

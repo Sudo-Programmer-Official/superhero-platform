@@ -77,6 +77,8 @@ class PaymentService:
         deal = await self.deal_repo.get(payload.deal_id)
         if not deal:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deal not found")
+        if deal.status != "published":
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Deal is not published")
         if deal.remaining_slots <= 0:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Deal is sold out")
 

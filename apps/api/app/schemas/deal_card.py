@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict
 class DealCardCreate(BaseModel):
     practitioner_id: UUID
     title: str
+    cta_text: str | None = None
+    booking_url: str | None = None
     description: str | None = None
     image: str | None = None
     price: Decimal
@@ -22,6 +24,8 @@ class DealCardCreate(BaseModel):
 
 class DealCardUpdate(BaseModel):
     title: str | None = None
+    cta_text: str | None = None
+    booking_url: str | None = None
     description: str | None = None
     image: str | None = None
     price: Decimal | None = None
@@ -32,6 +36,7 @@ class DealCardUpdate(BaseModel):
     end_time: datetime | None = None
     expiration_time: datetime | None = None
     share_link: str | None = None
+    status: str | None = None  # draft | published | expired | canceled
     wallet_enabled: bool | None = None
 
 
@@ -41,6 +46,9 @@ class DealCardRead(BaseModel):
     id: UUID
     practitioner_id: UUID
     title: str
+    slug: str
+    cta_text: str | None
+    booking_url: str | None
     description: str | None
     image: str | None
     price: Decimal
@@ -51,5 +59,6 @@ class DealCardRead(BaseModel):
     end_time: datetime
     expiration_time: datetime | None
     share_link: str | None
+    status: str
     wallet_enabled: bool
     created_at: datetime

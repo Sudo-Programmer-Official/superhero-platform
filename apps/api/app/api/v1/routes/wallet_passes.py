@@ -6,7 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_principal, require_roles
 from app.auth.types import AuthPrincipal
 from app.db import get_db_session
-from app.schemas.wallet_pass import WalletPassExpireRequest, WalletPassIssueRequest, WalletPassRead, WalletPassRedeemRequest
+from app.schemas.wallet_pass import (
+    WalletPassExpireRequest,
+    WalletPassIssueRequest,
+    WalletPassRead,
+    WalletPassRedeemRequest,
+    WalletPassRestoreRequest,
+)
 from app.services.wallet_pass_service import WalletPassService
 
 router = APIRouter(prefix="/wallet-passes", tags=["wallet-passes"])
@@ -46,3 +52,13 @@ async def expire_wallet_pass(
     session: AsyncSession = Depends(get_db_session),
 ):
     return await WalletPassService(session).expire_wallet_pass(wallet_pass_id, principal)
+
+
+@router.post("/{wallet_pass_id}/restore", response_model=WalletPassRead)
+async def restore_wallet_pass(
+    wallet_pass_id: UUID,
+    _: WalletPassRestoreRequest,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await WalletPassService(session).restore_wallet_pass(wallet_pass_id, principal)

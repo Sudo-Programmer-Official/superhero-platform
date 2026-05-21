@@ -18,6 +18,17 @@ class DealCardRepository:
     async def get(self, deal_id: UUID) -> DealCard | None:
         return await self.session.get(DealCard, deal_id)
 
+    async def get_by_slug(self, slug: str) -> DealCard | None:
+        stmt: Select[tuple[DealCard]] = select(DealCard).where(DealCard.slug == slug)
+        return await self.session.scalar(stmt)
+
+    async def list_by_practitioner(self, practitioner_id: UUID) -> list[DealCard]:
+        stmt: Select[tuple[DealCard]] = (
+            select(DealCard).where(DealCard.practitioner_id == practitioner_id).order_by(DealCard.start_time.asc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def create(self, model: DealCard) -> DealCard:
         self.session.add(model)
         await self.session.flush()

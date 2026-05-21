@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_principal, require_roles
 from app.auth.types import AuthPrincipal
 from app.db import get_db_session
-from app.schemas.practitioner import PractitionerCreate, PractitionerRead, PractitionerUpdate
+from app.schemas.practitioner import PractitionerCreate, PractitionerPublicRead, PractitionerRead, PractitionerUpdate
 from app.services.practitioner_service import PractitionerService
 
 router = APIRouter(prefix="/practitioners", tags=["practitioners"])
@@ -18,6 +18,14 @@ async def list_practitioners(
     session: AsyncSession = Depends(get_db_session),
 ):
     return await PractitionerService(session).list_practitioners()
+
+
+@router.get("/public/{practitioner_slug}", response_model=PractitionerPublicRead)
+async def get_public_practitioner(
+    practitioner_slug: str,
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await PractitionerService(session).get_public_practitioner(practitioner_slug)
 
 
 @router.post("", response_model=PractitionerRead, status_code=status.HTTP_201_CREATED)
