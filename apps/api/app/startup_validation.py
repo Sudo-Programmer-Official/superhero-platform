@@ -42,9 +42,10 @@ async def run_startup_validation() -> None:
     if firebase_check["status"] != "ok":
         raise RuntimeError(f'Firebase init failed: {firebase_check.get("detail", "unknown error")}')
 
-    s3_check = check_s3_access()
-    if s3_check["status"] != "ok":
-        raise RuntimeError(f'S3 access failed: {s3_check.get("detail", "unknown error")}')
+    if settings.startup_validation_check_s3:
+        s3_check = check_s3_access()
+        if s3_check["status"] != "ok":
+            raise RuntimeError(f'S3 access failed: {s3_check.get("detail", "unknown error")}')
 
     stripe_check = check_stripe()
     if stripe_check["status"] != "ok":

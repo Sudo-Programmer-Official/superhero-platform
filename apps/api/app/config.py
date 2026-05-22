@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     payments_enabled: bool = False
     payments_test_mode: bool = False
     startup_validation_strict: bool = True
+    startup_validation_check_s3: bool = False
     log_level: str = "INFO"
     log_format: str = "json"
 
