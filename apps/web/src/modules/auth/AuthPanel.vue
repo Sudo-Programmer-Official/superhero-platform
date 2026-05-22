@@ -85,8 +85,18 @@ function mapAuthError(err: unknown): string {
     case "auth/invalid-credential":
     case "auth/user-not-found":
       return "Incorrect email or password.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Please wait a moment and try again.";
+    case "auth/invalid-api-key":
+      return "Firebase API key is invalid. Verify your VITE_FIREBASE_* values.";
+    case "auth/operation-not-allowed":
+      return "Email/password auth is disabled in Firebase. Enable it in Authentication > Sign-in method.";
+    case "auth/configuration-not-found":
+      return "Firebase auth configuration is incomplete. Verify your web app settings.";
+    case "auth/user-disabled":
+      return "This account has been disabled.";
     case "auth/network-request-failed":
-      return "Network issue. Check your connection and try again.";
+      return "Auth network request failed. Check Firebase web config, authorized domains, and browser network/adblock settings.";
     default:
       return "Authentication failed. Please try again.";
   }
