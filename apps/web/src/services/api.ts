@@ -1,3 +1,6 @@
+import { fromDealApi, type Deal, type DealApiPayload } from "../domain/deal";
+import { fromBookingApi, type Booking, type BookingApiPayload } from "../domain/booking";
+
 export type MePayload = {
   uid: string;
   email: string | null;
@@ -33,33 +36,15 @@ export type DealCardCreatePayload = {
   price: string;
   capacity: number;
   location: string;
+  timezone?: string;
   start_time: string;
   end_time: string;
   expiration_time?: string | null;
   wallet_enabled?: boolean;
 };
 
-export type DealCardPayload = {
-  id: string;
-  practitioner_id: string;
-  title: string;
-  slug: string;
-  cta_text: string | null;
-  booking_url: string | null;
-  description: string | null;
-  image: string | null;
-  price: string;
-  capacity: number;
-  remaining_slots: number;
-  location: string;
-  start_time: string;
-  end_time: string;
-  expiration_time: string | null;
-  share_link: string | null;
-  status: "draft" | "published" | "expired";
-  wallet_enabled: boolean;
-  created_at: string;
-};
+export type DealCardPayload = Deal;
+export type BookingPayload = Booking;
 
 export type WalletPassPayload = {
   id: string;
@@ -77,6 +62,7 @@ export type CheckoutSessionCreatePayload = {
   deal_id: string;
   customer_email: string;
   customer_name?: string;
+  quantity?: number;
   success_url: string;
   cancel_url: string;
 };
@@ -151,39 +137,67 @@ export async function createDeal(token: string, payload: DealCardCreatePayload):
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error(`Failed create deal: ${res.status}`);
-  return res.json() as Promise<DealCardPayload>;
+  const json = (await res.json()) as DealApiPayload;
+  return fromDealApi(json);
 }
 
 export async function listDeals(token: string): Promise<DealCardPayload[]> {
   const res = await fetch(`${API_BASE}/api/v1/deal-cards`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed list deals: ${res.status}`);
-  return res.json() as Promise<DealCardPayload[]>;
+  const json = (await res.json()) as DealApiPayload[];
+  return json.map(fromDealApi);
 }
 
 export async function updateDealStatus(
   token: string,
   dealId: string,
-  status: "draft" | "published" | "expired"
+  status: "draft" | "published" | "expired" | "archived"
 ): Promise<DealCardPayload> {
+  const wireStatus = status === "archived" ? "canceled" : status;
   const res = await fetch(`${API_BASE}/api/v1/deal-cards/${dealId}`, {
     method: "PATCH",
     headers: headers(token),
-    body: JSON.stringify({ status })
+    body: JSON.stringify({ status: wireStatus })
   });
   if (!res.ok) throw new Error(`Failed update deal status: ${res.status}`);
-  return res.json() as Promise<DealCardPayload>;
+  const json = (await res.json()) as DealApiPayload;
+  return fromDealApi(json);
+}
+
+export async function duplicateDeal(token: string, dealId: string): Promise<DealCardPayload> {
+  const res = await fetch(`${API_BASE}/api/v1/deal-cards/${dealId}/duplicate`, {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify({})
+  });
+  if (!res.ok) throw new Error(`Failed duplicate deal: ${res.status}`);
+  const json = (await res.json()) as DealApiPayload;
+  return fromDealApi(json);
+}
+
+export async function archiveDeal(token: string, dealId: string): Promise<DealCardPayload> {
+  const res = await fetch(`${API_BASE}/api/v1/deal-cards/${dealId}/archive`, {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify({})
+  });
+  if (!res.ok) throw new Error(`Failed archive deal: ${res.status}`);
+  const json = (await res.json()) as DealApiPayload;
+  return fromDealApi(json);
 }
 
 export async function listPublicDeals(practitionerSlug: string): Promise<DealCardPayload[]> {
   const res = await fetch(`${API_BASE}/api/v1/deal-cards/public/${practitionerSlug}`);
   if (!res.ok) throw new Error(`Failed list public deals: ${res.status}`);
-  return res.json() as Promise<DealCardPayload[]>;
+  const json = (await res.json()) as DealApiPayload[];
+  return json.map(fromDealApi);
 }
 
 export async function fetchPublicDeal(practitionerSlug: string, dealSlug: string): Promise<DealCardPayload> {
   const res = await fetch(`${API_BASE}/api/v1/deal-cards/public/${practitionerSlug}/${dealSlug}`);
   if (!res.ok) throw new Error(`Failed public deal: ${res.status}`);
-  return res.json() as Promise<DealCardPayload>;
+  const json = (await res.json()) as DealApiPayload;
+  return fromDealApi(json);
 }
 
 export async function fetchPublicPractitioner(practitionerSlug: string): Promise<PractitionerPublicPayload> {
@@ -216,4 +230,11 @@ export async function restoreWalletPass(token: string, walletPassId: string): Pr
   });
   if (!res.ok) throw new Error(`Failed restore: ${res.status}`);
   return res.json() as Promise<WalletPassPayload>;
+}
+
+export async function listBookings(token: string): Promise<BookingPayload[]> {
+  const res = await fetch(`${API_BASE}/api/v1/bookings`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed booking list: ${res.status}`);
+  const json = (await res.json()) as BookingApiPayload[];
+  return json.map(fromBookingApi);
 }

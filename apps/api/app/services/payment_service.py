@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import stripe
@@ -9,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models import Customer, WalletPass
+from app.models import Booking, Customer, WalletPass
 from app.repositories.deal_card_repository import DealCardRepository
 from app.repositories.practitioner_repository import PractitionerRepository
 from app.repositories.wallet_pass_repository import WalletPassRepository
@@ -50,7 +51,13 @@ class PaymentService:
         await self.session.refresh(customer)
         return customer
 
-    async def _finalize_paid_checkout(self, checkout_session_id: str, deal_id: uuid.UUID, customer_id: uuid.UUID) -> None:
+    async def _finalize_paid_checkout(
+        self,
+        checkout_session_id: str,
+        deal_id: uuid.UUID,
+        customer_id: uuid.UUID,
+        quantity: int = 1,
+    ) -> None:
         existing = await self.wallet_repo.get_by_checkout_session_id(checkout_session_id)
         if existing:
             return
@@ -59,7 +66,44 @@ class PaymentService:
         if not deal or deal.remaining_slots <= 0:
             return
 
-        deal.remaining_slots -= 1
+        practitioner = await self.practitioner_repo.get(deal.practitioner_id)
+        customer = await self.session.get(Customer, customer_id)
+        if not practitioner or not customer:
+            return
+
+        purchased_qty = max(1, quantity)
+        if deal.remaining_slots < purchased_qty:
+            purchased_qty = deal.remaining_slots
+        deal.remaining_slots -= purchased_qty
+
+        unit_price = deal.price
+        subtotal = unit_price * purchased_qty
+        fee_amount = Decimal("0.00")
+        total_amount = subtotal + fee_amount
+
+        booking_number = f"BKG-{uuid.uuid4().hex[:10].upper()}"
+        booking = Booking(
+            booking_number=booking_number,
+            deal_id=deal.id,
+            practitioner_id=practitioner.id,
+            customer_id=customer.id,
+            customer_name=customer.name,
+            customer_email=customer.email,
+            customer_phone=None,
+            avatar_url=None,
+            quantity=purchased_qty,
+            subtotal=subtotal,
+            fee_amount=fee_amount,
+            total_amount=total_amount,
+            currency="USD",
+            payment_status="paid",
+            redemption_status="active",
+            wallet_pass_id=None,
+            qr_code=None,
+        )
+        self.session.add(booking)
+        await self.session.flush()
+
         wallet_pass = WalletPass(
             deal_id=deal_id,
             customer_id=customer_id,
@@ -67,8 +111,12 @@ class PaymentService:
             status="issued",
             wallet_type="apple",
             source_checkout_session_id=checkout_session_id,
+            booking_id=booking.id,
         )
         self.session.add(wallet_pass)
+        await self.session.flush()
+        booking.wallet_pass_id = wallet_pass.id
+        booking.qr_code = wallet_pass.qr_code
         await self.session.commit()
 
     async def create_checkout_session(self, payload: CheckoutSessionCreateRequest) -> CheckoutSessionCreateResponse:
@@ -86,7 +134,7 @@ class PaymentService:
 
         if settings.payments_test_mode:
             fake_session_id = f"test_cs_{uuid.uuid4().hex}"
-            await self._finalize_paid_checkout(fake_session_id, deal.id, customer.id)
+            await self._finalize_paid_checkout(fake_session_id, deal.id, customer.id, payload.quantity)
             success_url = self._append_query(
                 payload.success_url,
                 {
@@ -117,7 +165,7 @@ class PaymentService:
                 customer_email=customer.email,
                 line_items=[
                     {
-                        "quantity": 1,
+                        "quantity": max(1, payload.quantity),
                         "price_data": {
                             "currency": "usd",
                             "unit_amount": amount_cents,
@@ -136,6 +184,7 @@ class PaymentService:
                 metadata={
                     "deal_id": str(deal.id),
                     "customer_id": str(customer.id),
+                    "quantity": str(max(1, payload.quantity)),
                 },
             )
         except stripe.error.StripeError as exc:
@@ -184,5 +233,6 @@ class PaymentService:
         if not checkout_session_id or not deal_id or not customer_id:
             return {"received": True}
 
-        await self._finalize_paid_checkout(checkout_session_id, uuid.UUID(deal_id), uuid.UUID(customer_id))
+        quantity = int(metadata.get("quantity", "1"))
+        await self._finalize_paid_checkout(checkout_session_id, uuid.UUID(deal_id), uuid.UUID(customer_id), quantity)
         return {"received": True}

@@ -14,11 +14,11 @@
         <div class="hero-body">
           <div class="hero-top">
             <div>
-              <p class="badge">{{ deal.status.toUpperCase() }}</p>
+              <p class="badge">{{ getStatusLabel(deal.status) }}</p>
               <h1>{{ deal.title }}</h1>
               <p class="sub">{{ deal.description || "A premium wellness experience." }}</p>
             </div>
-            <p class="price">${{ deal.price }}</p>
+            <p class="price">{{ formatMoney(deal.base_price, deal.currency) }}</p>
           </div>
 
           <div class="meta-grid">
@@ -94,12 +94,12 @@
           <p v-if="formError" class="form-error">{{ formError }}</p>
 
           <div class="summary">
-            <div><span>Price</span><strong>${{ deal.price }}</strong></div>
+            <div><span>Price</span><strong>{{ formatMoney(deal.base_price, deal.currency) }}</strong></div>
             <div><span>Quantity</span><strong>{{ quantity }}</strong></div>
-            <div><span>Subtotal</span><strong>${{ subtotal }}</strong></div>
-            <div><span>Platform fee</span><strong>${{ fee }}</strong></div>
-            <div><span>Estimated tax</span><strong>${{ tax }}</strong></div>
-            <div class="total"><span>Total</span><strong>${{ total }}</strong></div>
+            <div><span>Subtotal</span><strong>{{ subtotal }}</strong></div>
+            <div><span>Platform fee</span><strong>{{ fee }}</strong></div>
+            <div><span>Estimated tax</span><strong>{{ tax }}</strong></div>
+            <div class="total"><span>Total</span><strong>{{ total }}</strong></div>
           </div>
 
           <AppButton
@@ -132,6 +132,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import AppButton from "../design-system/primitives/AppButton.vue";
 import AppCard from "../design-system/primitives/AppCard.vue";
+import { calculateCheckoutTotals, formatLocalDateTime, formatMoney, formatTimezone, getStatusLabel } from "../domain/deal";
 import { createCheckoutSession, fetchPublicDeal, type DealCardPayload } from "../services/api";
 
 type CheckoutState = "idle" | "processing" | "success" | "failed";
@@ -155,11 +156,14 @@ const checkoutForm = ref({
 let reserveTimer: number | null = null;
 
 const maxQuantity = computed(() => Math.max(1, Math.min(8, deal.value?.remaining_slots || 1)));
-const unitPrice = computed(() => Number(deal.value?.price || 0));
-const subtotal = computed(() => (unitPrice.value * quantity.value).toFixed(2));
-const fee = computed(() => (Number(subtotal.value) * 0.05).toFixed(2));
-const tax = computed(() => (Number(subtotal.value) * 0.08).toFixed(2));
-const total = computed(() => (Number(subtotal.value) + Number(fee.value) + Number(tax.value)).toFixed(2));
+const checkoutTotals = computed(() => {
+  if (!deal.value) return null;
+  return calculateCheckoutTotals(deal.value, quantity.value);
+});
+const subtotal = computed(() => checkoutTotals.value?.formatted.subtotal ?? formatMoney(0));
+const fee = computed(() => checkoutTotals.value?.formatted.fee ?? formatMoney(0));
+const tax = computed(() => checkoutTotals.value?.formatted.tax ?? formatMoney(0));
+const total = computed(() => checkoutTotals.value?.formatted.total ?? formatMoney(0));
 const reserveTimeLabel = computed(() => {
   const minutes = Math.floor(reserveSeconds.value / 60)
     .toString()
@@ -185,11 +189,12 @@ const checkoutStatusCopy = computed(() => {
 const checkoutLabel = computed(() => {
   if (checkoutState.value === "processing") return "Processing...";
   if (deal.value?.status !== "published") return "Unavailable";
-  return `Pay $${total.value}`;
+  return `Pay ${total.value}`;
 });
 
 function formatDate(value: string): string {
-  return new Date(value).toLocaleString();
+  const tz = deal.value?.timezone || "UTC";
+  return `${formatLocalDateTime(value, tz)} ${formatTimezone(value, tz)}`;
 }
 
 function resetReservationTimer() {
@@ -230,6 +235,13 @@ async function load() {
       checkoutNotice.value = "Payment completed successfully. Your pass will be issued shortly.";
       checkoutNoticeTone.value = "ok";
       checkoutState.value = "success";
+      const handoffPayload = {
+        at: new Date().toISOString(),
+        dealId: deal.value.id,
+        dealSlug,
+        email: checkoutForm.value.email || null
+      };
+      window.localStorage.setItem("openmat:last-checkout-success", JSON.stringify(handoffPayload));
     } else if (checkoutQuery === "cancel") {
       checkoutNotice.value = "Checkout was cancelled. You can retry any time.";
       checkoutNoticeTone.value = "error";
@@ -272,6 +284,7 @@ async function onCheckout() {
       deal_id: deal.value.id,
       customer_email: checkoutForm.value.email,
       customer_name: `${checkoutForm.value.name} x${quantity.value}`,
+      quantity: quantity.value,
       success_url: `${window.location.origin}${window.location.pathname}?checkout=success`,
       cancel_url: `${window.location.origin}${window.location.pathname}?checkout=cancel`
     });

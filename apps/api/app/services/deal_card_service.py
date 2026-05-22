@@ -65,6 +65,7 @@ class DealCardService:
             capacity=payload.capacity,
             remaining_slots=payload.capacity,
             location=payload.location,
+            timezone=payload.timezone,
             start_time=payload.start_time,
             end_time=payload.end_time,
             expiration_time=payload.expiration_time,
@@ -101,6 +102,69 @@ class DealCardService:
             for wallet_pass in wallet_passes:
                 if wallet_pass.status not in {"redeemed"}:
                     wallet_pass.status = "inactive"
+
+        await self.session.commit()
+        await self.session.refresh(model)
+        return model
+
+    async def duplicate_deal(self, deal_id: UUID, principal: AuthPrincipal) -> DealCard:
+        source = await self.repo.get(deal_id)
+        if not source:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deal not found")
+
+        if principal.role == "practitioner":
+            practitioner = await self.practitioner_repo.get(source.practitioner_id)
+            if not practitioner or practitioner.firebase_uid != principal.uid:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot duplicate this deal")
+
+        base_slug = slugify(f"{source.title}-copy")
+        slug = base_slug
+        i = 1
+        while await self.repo.get_by_slug(slug):
+            i += 1
+            slug = f"{base_slug}-{i}"
+
+        model = DealCard(
+            practitioner_id=source.practitioner_id,
+            title=f"{source.title} (Copy)",
+            slug=slug,
+            cta_text=source.cta_text,
+            booking_url=source.booking_url,
+            description=source.description,
+            image=source.image,
+            price=source.price,
+            capacity=source.capacity,
+            remaining_slots=source.capacity,
+            location=source.location,
+            timezone=source.timezone,
+            start_time=source.start_time,
+            end_time=source.end_time,
+            expiration_time=source.expiration_time,
+            share_link=None,
+            status="draft",
+            wallet_enabled=source.wallet_enabled,
+        )
+        created = await self.repo.create(model)
+        await self.session.commit()
+        return created
+
+    async def archive_deal(self, deal_id: UUID, principal: AuthPrincipal) -> DealCard:
+        model = await self.repo.get(deal_id)
+        if not model:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deal not found")
+
+        if principal.role == "practitioner":
+            practitioner = await self.practitioner_repo.get(model.practitioner_id)
+            if not practitioner or practitioner.firebase_uid != principal.uid:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot archive this deal")
+
+        model.status = "canceled"
+        model.share_link = None
+
+        wallet_passes = await self.wallet_repo.list_by_deal_id(model.id)
+        for wallet_pass in wallet_passes:
+            if wallet_pass.status not in {"redeemed"}:
+                wallet_pass.status = "inactive"
 
         await self.session.commit()
         await self.session.refresh(model)

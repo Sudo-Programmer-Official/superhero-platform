@@ -26,6 +26,7 @@ class DealCard(Base):
     capacity: Mapped[int] = mapped_column(Integer, nullable=False)
     remaining_slots: Mapped[int] = mapped_column(Integer, nullable=False)
     location: Mapped[str] = mapped_column(String(255), nullable=False)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     expiration_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

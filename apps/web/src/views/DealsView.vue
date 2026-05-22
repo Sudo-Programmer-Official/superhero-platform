@@ -4,11 +4,16 @@
       <h1 class="m-0 text-2xl font-bold tracking-[-0.02em]">Deals</h1>
       <AppButton tag="RouterLink" to="/dashboard/deals/create" variant="primary" size="form">Create Deal</AppButton>
     </div>
-    <DealsPanel />
+    <DealsPanel :focus-deal-id="focusDealId" />
   </section>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import AppButton from "../design-system/primitives/AppButton.vue";
 import DealsPanel from "../modules/deals/DealsPanel.vue";
+
+const route = useRoute();
+const focusDealId = computed(() => String(route.query.deal || "").trim() || undefined);
 </script>

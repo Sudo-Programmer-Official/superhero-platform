@@ -12,6 +12,7 @@ export type DealStudioForm = {
   redemptionType: "qr" | "nfc";
   visibility: "public" | "private";
   location: string;
+  timezone: string;
 };
 
 export type DealStudioStatus = "idle" | "saving" | "publishing" | "done";
@@ -34,7 +35,8 @@ export const dealStudioState = reactive({
     price: "45.00",
     redemptionType: "qr",
     visibility: "public",
-    location: ""
+    location: "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
   } as DealStudioForm
 });
 
@@ -71,6 +73,7 @@ export function resetDealStudio() {
     price: "45.00",
     redemptionType: "qr",
     visibility: "public",
-    location: ""
+    location: "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
   };
 }

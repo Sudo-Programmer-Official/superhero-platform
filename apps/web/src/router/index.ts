@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import AppLayout from "../layouts/AppLayout.vue";
 import AuthLayout from "../layouts/AuthLayout.vue";
+import BookingsView from "../views/BookingsView.vue";
 import DealsView from "../views/DealsView.vue";
 import CreateDealView from "../views/CreateDealView.vue";
 import HomeView from "../views/HomeView.vue";
@@ -51,6 +52,7 @@ const router = createRouter({
       children: [
         { path: "dashboard", name: "dashboard", component: HomeView, meta: { requiresAuth: true } },
         { path: "dashboard/deals", name: "deals", component: DealsView, meta: { requiresAuth: true } },
+        { path: "dashboard/bookings", name: "bookings", component: BookingsView, meta: { requiresAuth: true } },
         { path: "dashboard/deals/create", name: "deals-create", component: CreateDealView, meta: { requiresAuth: true } },
         { path: "dashboard/wallet-passes", name: "wallet-passes", component: WalletPassesView, meta: { requiresAuth: true } },
         { path: "dashboard/redemptions", name: "redemptions", component: RedemptionsView, meta: { requiresAuth: true } },

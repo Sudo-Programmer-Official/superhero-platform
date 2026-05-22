@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_connect_client_id: str = ""
     stripe_country: str = "US"
+    payments_enabled: bool = False
     payments_test_mode: bool = False
     startup_validation_strict: bool = True
     log_level: str = "INFO"
@@ -77,7 +78,7 @@ class Settings(BaseSettings):
             "S3_PREFIX",
             "LOG_LEVEL",
         ]
-        if not self.payments_test_mode:
+        if self.payments_enabled and not self.payments_test_mode:
             keys.extend(
                 [
                     "STRIPE_SECRET_KEY",

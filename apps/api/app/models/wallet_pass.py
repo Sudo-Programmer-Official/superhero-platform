@@ -22,6 +22,9 @@ class WalletPass(Base):
     )
     qr_code: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
     source_checkout_session_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    booking_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey(f"{settings.db_schema}.bookings.id", ondelete="SET NULL"), nullable=True
+    )
     status: Mapped[str] = mapped_column(String(32), default="issued", nullable=False)
     redeemed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     wallet_type: Mapped[str] = mapped_column(String(32), default="apple", nullable=False)

@@ -13,7 +13,7 @@
         <nav class="sidebar__nav">
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'dashboard' }" to="/dashboard">Home</RouterLink>
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'deals' }" to="/dashboard/deals">Deals</RouterLink>
-          <button class="sidebar__item" type="button">Bookings</button>
+          <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'bookings' }" to="/dashboard/bookings">Bookings</RouterLink>
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'wallet-passes' }" to="/dashboard/wallet-passes">Wallet Passes</RouterLink>
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'redemptions' }" to="/dashboard/redemptions">Redemptions</RouterLink>
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'profile' }" to="/dashboard/profile">Profile</RouterLink>
@@ -52,7 +52,7 @@
       <nav class="sidebar__nav">
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'dashboard' }" to="/dashboard" @click="isDrawerOpen = false">Home</RouterLink>
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'deals' }" to="/dashboard/deals" @click="isDrawerOpen = false">Deals</RouterLink>
-        <button class="sidebar__item" type="button">Bookings</button>
+        <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'bookings' }" to="/dashboard/bookings" @click="isDrawerOpen = false">Bookings</RouterLink>
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'wallet-passes' }" to="/dashboard/wallet-passes" @click="isDrawerOpen = false">Wallet Passes</RouterLink>
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'redemptions' }" to="/dashboard/redemptions" @click="isDrawerOpen = false">Redemptions</RouterLink>
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'profile' }" to="/dashboard/profile" @click="isDrawerOpen = false">Profile</RouterLink>

@@ -24,6 +24,12 @@
             <div class="field"><label>Cover image URL</label><AppInput v-model="studio.form.coverImage" placeholder="https://..." /></div>
             <div class="field"><label>Start</label><AppInput v-model="studio.form.startsAt" type="datetime-local" /></div>
             <div class="field"><label>End</label><AppInput v-model="studio.form.endsAt" type="datetime-local" /></div>
+            <div class="field">
+              <label>Timezone</label>
+              <select v-model="studio.form.timezone" class="field-select">
+                <option v-for="tz in timezoneOptions" :key="tz" :value="tz">{{ tz }}</option>
+              </select>
+            </div>
             <div class="field"><label>Seats</label><AppInput v-model="studio.form.seats" type="number" placeholder="20" /></div>
             <div class="field"><label>Pricing (USD)</label><AppInput v-model="studio.form.price" type="number" placeholder="45.00" /></div>
             <div class="field">
@@ -118,6 +124,7 @@ import { useRouter } from "vue-router";
 import AppButton from "../design-system/primitives/AppButton.vue";
 import AppCard from "../design-system/primitives/AppCard.vue";
 import AppInput from "../design-system/primitives/AppInput.vue";
+import { formatLocalDateTime, formatTimezone } from "../domain/deal";
 import { createDeal, updateDealStatus } from "../services/api";
 import { dealStudioState as studio, nextDealStudioStep, prevDealStudioStep, resetDealStudio, setDealStudioToast } from "../stores/dealStudio";
 import { sessionState } from "../stores/session";
@@ -127,8 +134,21 @@ const steps = ["Configure", "Preview", "Publish", "Share"];
 
 const formattedStart = computed(() => {
   if (!studio.form.startsAt) return "Date pending";
-  return new Date(studio.form.startsAt).toLocaleString();
+  const iso = new Date(studio.form.startsAt).toISOString();
+  return `${formatLocalDateTime(iso, studio.form.timezone)} ${formatTimezone(iso, studio.form.timezone)}`;
 });
+
+const timezoneOptions = [
+  Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Asia/Kolkata",
+  "Asia/Tokyo"
+].filter((value, index, self) => self.indexOf(value) === index);
 
 const draftBadge = computed(() => {
   if (studio.status === "publishing") return "publishing";
@@ -155,6 +175,7 @@ async function onCreateDraft() {
       title: studio.form.title || "Untitled Deal",
       description: studio.form.description || null,
       location: studio.form.location || "TBD",
+      timezone: studio.form.timezone || "UTC",
       image: studio.form.coverImage || null,
       price: studio.form.price || "0.00",
       capacity: Number(studio.form.seats || 0),

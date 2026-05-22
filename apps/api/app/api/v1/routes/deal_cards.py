@@ -56,6 +56,24 @@ async def update_deal_card(
     return await DealCardService(session).update_deal(deal_id, payload, principal)
 
 
+@router.post("/{deal_id}/duplicate", response_model=DealCardRead, status_code=status.HTTP_201_CREATED)
+async def duplicate_deal_card(
+    deal_id: UUID,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await DealCardService(session).duplicate_deal(deal_id, principal)
+
+
+@router.post("/{deal_id}/archive", response_model=DealCardRead)
+async def archive_deal_card(
+    deal_id: UUID,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await DealCardService(session).archive_deal(deal_id, principal)
+
+
 @router.delete("/{deal_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_deal_card(
     deal_id: UUID,

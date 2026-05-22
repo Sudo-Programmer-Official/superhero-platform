@@ -56,6 +56,8 @@ def check_s3_access() -> dict[str, Any]:
 
 
 def check_stripe() -> dict[str, Any]:
+    if not settings.payments_enabled:
+        return {"status": "ok", "mode": "payments_disabled"}
     if settings.payments_test_mode:
         return {"status": "ok", "mode": "payments_test_mode"}
     if not settings.stripe_secret_key:

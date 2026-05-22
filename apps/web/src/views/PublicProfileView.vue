@@ -36,7 +36,7 @@
           </div>
           <p class="m-0 rounded-xl border border-[#d0d5dd] bg-white px-3 py-1 text-xl font-semibold">${{ deal.price }}</p>
         </div>
-        <p class="m-0 text-sm text-[#4b5563]">{{ deal.location }} · {{ new Date(deal.start_time).toLocaleString() }}</p>
+        <p class="m-0 text-sm text-[#4b5563]">{{ deal.location_name }} · {{ formatEventTime(deal.start_at, deal.timezone) }}</p>
         <AppButton tag="RouterLink" variant="secondary" size="lg" :to="`/openmat/${practitionerSlug}/${deal.slug}`">Open deal</AppButton>
       </div>
     </article>
@@ -61,6 +61,7 @@ import { useRoute } from "vue-router";
 
 import AppButton from "../design-system/primitives/AppButton.vue";
 import AppCard from "../design-system/primitives/AppCard.vue";
+import { formatLocalDateTime, formatTimezone } from "../domain/deal";
 import { fetchPublicPractitioner, listPublicDeals, type DealCardPayload, type PractitionerPublicPayload } from "../services/api";
 
 const route = useRoute();
@@ -100,3 +101,6 @@ async function onShareProfile() {
 
 onMounted(load);
 </script>
+function formatEventTime(value: string, timezone: string): string {
+  return `${formatLocalDateTime(value, timezone)} ${formatTimezone(value, timezone)}`;
+}

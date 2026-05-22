@@ -6,6 +6,7 @@ class CheckoutSessionCreateRequest(BaseModel):
     deal_id: UUID
     customer_email: EmailStr
     customer_name: str | None = None
+    quantity: int = 1
     success_url: str
     cancel_url: str
 

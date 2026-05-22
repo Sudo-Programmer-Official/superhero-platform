@@ -1,188 +1,273 @@
 <template>
-  <section class="grid gap-3">
-    <AppCard>
-      <p class="eyebrow">Deal Studio</p>
-      <h2 class="mt-2 text-xl font-bold tracking-[-0.01em]">Create and publish in under 3 minutes</h2>
-      <p class="mt-2 text-sm text-[var(--text-secondary)]">
-        Publish one high-conversion offer first. You can share it immediately after publish.
-      </p>
-
-      <div class="mt-4 grid gap-3 rounded-xl border border-[color:var(--card-border)] bg-[rgba(12,22,36,.55)] p-4">
-        <p class="text-xs uppercase tracking-[0.12em] text-[var(--accent)]">Step 1 • Core Offer</p>
-        <div class="grid gap-2 sm:grid-cols-2">
-          <AppInput v-model="form.title" placeholder="Deal title" />
-          <AppInput v-model="form.location" placeholder="Location" />
+  <section class="deals-control-center">
+    <AppCard class="control-bar">
+      <div class="control-bar__top">
+        <div>
+          <p class="eyebrow">Control Center</p>
+          <h2>Operate your campaigns</h2>
         </div>
-        <AppInput v-model="form.description" placeholder="Short description" />
-        <AppInput v-model="form.image" placeholder="Cover image URL" />
+        <AppButton tag="RouterLink" to="/dashboard/deals/create" variant="primary" size="form">Create Deal</AppButton>
       </div>
 
-      <div class="mt-3 grid gap-3 rounded-xl border border-[color:var(--card-border)] bg-[rgba(12,22,36,.55)] p-4">
-        <p class="text-xs uppercase tracking-[0.12em] text-[var(--accent)]">Step 2 • Pricing & Conversion</p>
-        <div class="grid gap-2 sm:grid-cols-2">
-          <AppInput v-model="form.price" type="number" placeholder="Price (USD)" />
-          <AppInput v-model="form.capacityText" type="number" placeholder="Capacity" />
-        </div>
-        <div class="grid gap-2 sm:grid-cols-2">
-          <AppInput v-model="form.cta_text" placeholder="CTA text (Book now)" />
-          <AppInput v-model="form.booking_url" placeholder="External booking URL" />
-        </div>
-      </div>
+      <div class="control-bar__row">
+        <AppInput :model-value="search" placeholder="Search by title, location, slug" @update:model-value="setSearch" />
 
-      <div class="mt-3 grid gap-3 rounded-xl border border-[color:var(--card-border)] bg-[rgba(12,22,36,.55)] p-4">
-        <p class="text-xs uppercase tracking-[0.12em] text-[var(--accent)]">Step 3 • Timing</p>
-        <div class="grid gap-2 sm:grid-cols-2">
-          <div class="grid gap-1">
-            <label class="text-xs text-[var(--text-muted)]">Start time</label>
-            <AppInput v-model="form.start_time" type="datetime-local" />
-          </div>
-          <div class="grid gap-1">
-            <label class="text-xs text-[var(--text-muted)]">End time</label>
-            <AppInput v-model="form.end_time" type="datetime-local" />
-          </div>
+        <select class="control-select" :value="sort" @change="setSort(($event.target as HTMLSelectElement).value as DealSort)">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="revenue_desc">Revenue high → low</option>
+          <option value="conversion_desc">Conversion high → low</option>
+          <option value="bookings_desc">Bookings high → low</option>
+        </select>
+
+        <select class="control-select" :value="filter" @change="setFilter(($event.target as HTMLSelectElement).value as DealStatusFilter)">
+          <option value="all">All statuses</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+          <option value="sold_out">Sold out</option>
+          <option value="archived">Archived</option>
+          <option value="expired">Expired</option>
+        </select>
+
+        <div class="view-toggle" role="tablist" aria-label="View mode">
+          <button class="toggle-btn" :class="{ 'is-active': viewMode === 'grid' }" @click="setViewMode('grid')">Grid</button>
+          <button class="toggle-btn" :class="{ 'is-active': viewMode === 'list' }" @click="setViewMode('list')">List</button>
         </div>
       </div>
 
-      <div class="mt-4 flex flex-wrap gap-2">
-        <AppButton variant="primary" @click="onCreateDeal">Create draft</AppButton>
-        <p class="self-center text-xs text-[var(--text-muted)]">Draft → Publish → Share link</p>
+      <div class="chips">
+        <button class="chip" :class="{ 'is-active': filter === 'all' }" @click="setFilter('all')">All {{ statusCounts.all }}</button>
+        <button class="chip" :class="{ 'is-active': filter === 'published' }" @click="setFilter('published')">Published {{ statusCounts.published }}</button>
+        <button class="chip" :class="{ 'is-active': filter === 'draft' }" @click="setFilter('draft')">Draft {{ statusCounts.draft }}</button>
+        <button class="chip" :class="{ 'is-active': filter === 'sold_out' }" @click="setFilter('sold_out')">Sold out {{ statusCounts.sold_out }}</button>
+        <button class="chip" :class="{ 'is-active': filter === 'archived' }" @click="setFilter('archived')">Archived {{ statusCounts.archived }}</button>
+        <button class="chip" :class="{ 'is-active': filter === 'expired' }" @click="setFilter('expired')">Expired {{ statusCounts.expired }}</button>
       </div>
     </AppCard>
 
-    <AppCard v-if="sessionState.statusText" :muted="true">
-      <p class="mb-1 text-xs uppercase tracking-[0.12em] text-[var(--accent)]">Status</p>
-      <p class="m-0 text-sm text-[var(--text-secondary)]">{{ sessionState.statusText }}</p>
+    <AppCard v-if="focusId && !focusedDealFound" muted>
+      <p class="mb-1 text-xs uppercase tracking-[0.12em] text-[var(--accent)]">Deep Link</p>
+      <p class="m-0 text-sm text-[var(--text-secondary)]">Deal not found for id: {{ focusId.slice(0, 8) }}</p>
     </AppCard>
 
-    <DealCardPattern v-for="deal in deals" :key="deal.id">
-      <template #meta>{{ deal.status.toUpperCase() }}</template>
-      <template #title>{{ deal.title }}</template>
-      <template #subtitle>{{ deal.location }} · {{ prettyDate(deal.start_time) }}</template>
-      <template #price>${{ deal.price }}</template>
-      <template #actions>
-        <AppButton v-if="deal.status !== 'published'" variant="primary" @click="onPublish(deal.id)">Publish</AppButton>
-        <AppButton v-if="deal.status !== 'expired'" @click="onExpire(deal.id)">Mark expired</AppButton>
-        <AppButton v-if="deal.share_link" @click="onCopyShare(deal.share_link)">Copy share link</AppButton>
-        <AppButton v-if="deal.share_link" variant="secondary" @click="onOpenShare(deal.share_link)">Open public page</AppButton>
-        <AppButton
-          v-if="deal.share_link && deal.status === 'published'"
-          variant="primary"
-          @click="onTestCheckout(deal.share_link)"
-        >
-          Test checkout
-        </AppButton>
-      </template>
-    </DealCardPattern>
+    <div v-if="loading" class="skeleton-grid" :class="{ 'is-list': viewMode === 'list' }">
+      <div v-for="n in viewMode === 'grid' ? 6 : 4" :key="`sk-${n}`" class="skeleton-card shimmer"></div>
+    </div>
+
+    <AppCard v-else-if="hasEmptyState" class="empty-state">
+      <div class="empty-illustration">◌</div>
+      <h3>No deals yet</h3>
+      <p>Launch your first campaign to start tracking bookings, revenue, and conversion.</p>
+      <AppButton tag="RouterLink" to="/dashboard/deals/create" variant="primary" size="form">Create First Deal</AppButton>
+    </AppCard>
+
+    <template v-else>
+      <div v-if="viewMode === 'grid'" class="deal-grid">
+        <article v-for="deal in paginatedDeals" :key="deal.id" class="deal-card" :class="{ 'is-focused': focusId === deal.id }">
+          <div class="cover-wrap">
+            <img v-if="deal.image" :src="deal.image" :alt="deal.title" class="cover" />
+            <div v-else class="cover cover--fallback"></div>
+            <span class="status" :class="`is-${getStatusColor(deal.lifecycle)}`">{{ getStatusLabel(deal.lifecycle) }}</span>
+          </div>
+
+          <div class="deal-body">
+            <h3>{{ deal.title }}</h3>
+            <p class="meta">{{ prettyDate(deal.start_at) }} · {{ deal.location_name }}</p>
+
+            <div class="kpis">
+              <div>
+                <span>Seats sold</span>
+                <strong>{{ deal.metric.bookings }} / {{ deal.total_seats }}</strong>
+              </div>
+              <div>
+                <span>Revenue</span>
+                <strong>{{ formatMoney(deal.metric.revenue, deal.currency) }}</strong>
+              </div>
+              <div>
+                <span>Conversion</span>
+                <strong>{{ deal.metric.conversion.toFixed(1) }}%</strong>
+              </div>
+            </div>
+
+            <div class="chips-inline">
+              <span class="mini-chip">Wallet {{ deal.wallet_enabled ? 'on' : 'off' }}</span>
+              <span class="mini-chip">Remaining {{ deal.seats_remaining }}</span>
+            </div>
+
+            <div class="actions">
+              <AppButton variant="ghost" @click="onEdit(deal.id)">Edit</AppButton>
+              <AppButton variant="ghost" @click="duplicateDealById(deal.id)">Duplicate</AppButton>
+              <AppButton v-if="deal.lifecycle !== 'published'" variant="secondary" @click="setPublished(deal.id, true)">Publish</AppButton>
+              <AppButton v-else variant="secondary" @click="setPublished(deal.id, false)">Unpublish</AppButton>
+              <AppButton v-if="deal.public_url" variant="ghost" @click="copyShareLink(deal.public_url)">Copy link</AppButton>
+              <AppButton v-if="deal.public_url" variant="ghost" @click="viewPublicPage(deal.public_url)">View public</AppButton>
+              <AppButton variant="ghost" @click="archiveById(deal.id)">Archive</AppButton>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <AppCard v-else class="list-wrap">
+        <table class="deal-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Bookings</th>
+              <th>Revenue</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="deal in paginatedDeals" :key="deal.id" :class="{ 'is-focused': focusId === deal.id }">
+              <td>
+                <p class="table-title">{{ deal.title }}</p>
+                <p class="table-sub">{{ deal.location_name }}</p>
+              </td>
+              <td><span class="status" :class="`is-${getStatusColor(deal.lifecycle)}`">{{ getStatusLabel(deal.lifecycle) }}</span></td>
+              <td>{{ deal.metric.bookings }} / {{ deal.total_seats }}</td>
+              <td>{{ formatMoney(deal.metric.revenue, deal.currency) }}</td>
+              <td>{{ prettyDate(deal.created_at) }}</td>
+              <td>
+                <div class="table-actions">
+                  <button @click="duplicateDealById(deal.id)">Duplicate</button>
+                  <button @click="setPublished(deal.id, deal.lifecycle !== 'published')">{{ deal.lifecycle === 'published' ? 'Unpublish' : 'Publish' }}</button>
+                  <button @click="archiveById(deal.id)">Archive</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </AppCard>
+
+      <div class="pagination">
+        <AppButton variant="ghost" :disabled="page <= 1" @click="goToPrevPage">Previous</AppButton>
+        <p>Page {{ page }} / {{ totalPages }}</p>
+        <AppButton variant="ghost" :disabled="page >= totalPages" @click="goToNextPage">Next</AppButton>
+      </div>
+    </template>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
-
-import DealCardPattern from "../../design-system/patterns/DealCardPattern.vue";
+import { onMounted } from "vue";
+import { useRouter } from "vue-router";
 import AppButton from "../../design-system/primitives/AppButton.vue";
 import AppCard from "../../design-system/primitives/AppCard.vue";
 import AppInput from "../../design-system/primitives/AppInput.vue";
-import { createDeal, listDeals, type DealCardPayload, updateDealStatus } from "../../services/api";
-import { sessionState } from "../../stores/session";
+import { useDealsControlCenter, type DealSort, type DealStatusFilter } from "../../composables/useDealsControlCenter";
+import { formatDealDate, formatDealTime, formatMoney, getStatusColor, getStatusLabel } from "../../domain/deal";
 
-const deals = ref<DealCardPayload[]>([]);
-const form = reactive({
-  title: "",
-  description: "",
-  location: "",
-  image: "",
-  price: "25.00",
-  capacityText: "20",
-  cta_text: "Book now",
-  booking_url: "",
-  start_time: "",
-  end_time: ""
-});
+const props = defineProps<{ focusDealId?: string }>();
+const router = useRouter();
+
+const {
+  archiveById,
+  copyShareLink,
+  duplicateDealById,
+  focusId,
+  focusedDealFound,
+  goToNextPage,
+  goToPrevPage,
+  hasEmptyState,
+  loadDeals,
+  loading,
+  page,
+  paginatedDeals,
+  search,
+  setFilter,
+  setSearch,
+  setSort,
+  setViewMode,
+  setPublished,
+  sort,
+  statusCounts,
+  totalPages,
+  viewMode,
+  filter,
+  viewPublicPage
+} = useDealsControlCenter(props.focusDealId);
 
 function prettyDate(value: string): string {
-  const date = new Date(value);
-  return date.toLocaleString();
+  return `${formatDealDate(value)} ${formatDealTime(value)}`;
 }
 
-async function loadDeals() {
-  if (!sessionState.token) return;
-  try {
-    deals.value = await listDeals(sessionState.token);
-  } catch (err) {
-    sessionState.statusText = `Failed to load deals: ${String(err)}`;
-  }
-}
-
-async function onCreateDeal() {
-  if (!sessionState.token || !sessionState.me?.practitioner_id) return;
-  if (!form.title || !form.location || !form.start_time || !form.end_time) {
-    sessionState.statusText = "Title, location, start, and end time are required";
-    return;
-  }
-  try {
-    await createDeal(sessionState.token, {
-      practitioner_id: sessionState.me.practitioner_id,
-      title: form.title,
-      description: form.description || null,
-      location: form.location,
-      image: form.image || null,
-      price: form.price,
-      capacity: Number(form.capacityText || 0),
-      cta_text: form.cta_text || null,
-      booking_url: form.booking_url || null,
-      start_time: new Date(form.start_time).toISOString(),
-      end_time: new Date(form.end_time).toISOString()
-    });
-    sessionState.statusText = "Draft created";
-    await loadDeals();
-  } catch (err) {
-    sessionState.statusText = `Create failed: ${String(err)}`;
-  }
-}
-
-async function onPublish(dealId: string) {
-  if (!sessionState.token) return;
-  try {
-    await updateDealStatus(sessionState.token, dealId, "published");
-    sessionState.statusText = "Deal published";
-    await loadDeals();
-  } catch (err) {
-    sessionState.statusText = `Publish failed: ${String(err)}`;
-  }
-}
-
-async function onExpire(dealId: string) {
-  if (!sessionState.token) return;
-  try {
-    await updateDealStatus(sessionState.token, dealId, "expired");
-    sessionState.statusText = "Deal marked expired";
-    await loadDeals();
-  } catch (err) {
-    sessionState.statusText = `Expire failed: ${String(err)}`;
-  }
-}
-
-async function onCopyShare(sharePath: string) {
-  await navigator.clipboard.writeText(toAbsoluteShareUrl(sharePath));
-  sessionState.statusText = "Share link copied";
-}
-
-function toAbsoluteShareUrl(sharePath: string): string {
-  return `${window.location.origin}${sharePath}`;
-}
-
-function onOpenShare(sharePath: string) {
-  window.open(toAbsoluteShareUrl(sharePath), "_blank", "noopener,noreferrer");
-}
-
-function onTestCheckout(sharePath: string) {
-  const url = new URL(toAbsoluteShareUrl(sharePath), window.location.origin);
-  url.searchParams.set("autocheckout", "1");
-  window.open(url.toString(), "_blank", "noopener,noreferrer");
+function onEdit(dealId: string) {
+  void router.push({ path: "/dashboard/deals/create", query: { edit: dealId } });
 }
 
 onMounted(async () => {
   await loadDeals();
 });
 </script>
+
+<style scoped>
+.deals-control-center { display: grid; gap: 12px; padding-bottom: 24px; }
+.control-bar { position: sticky; top: 76px; z-index: 5; backdrop-filter: blur(12px); }
+.control-bar__top { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.control-bar__top h2 { margin: 4px 0 0; font-size: 24px; }
+.control-bar__row { margin-top: 12px; display: grid; grid-template-columns: 1.3fr 200px 180px auto; gap: 8px; align-items: center; }
+.control-select { height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(12,18,30,.68); color: #dbe5f3; padding: 0 10px; }
+.view-toggle { display: flex; gap: 6px; }
+.toggle-btn { height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.03); color: rgba(255,255,255,.75); padding: 0 12px; }
+.toggle-btn.is-active { border-color: rgba(240,190,100,.55); background: rgba(240,190,100,.16); color: #f4d8a7; }
+.chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.03); color: rgba(255,255,255,.75); padding: 7px 11px; font-size: 12px; }
+.chip.is-active { border-color: rgba(240,190,100,.5); background: rgba(240,190,100,.15); color: #f4d8a7; }
+.skeleton-grid { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
+.skeleton-grid.is-list { grid-template-columns: 1fr; }
+.skeleton-card { height: 230px; border-radius: 20px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); }
+.shimmer { background-image: linear-gradient(100deg, rgba(255,255,255,.03) 20%, rgba(255,255,255,.1) 50%, rgba(255,255,255,.03) 80%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }
+.empty-state { text-align: center; padding: 28px; display: grid; gap: 10px; justify-items: center; }
+.empty-illustration { width: 72px; height: 72px; border-radius: 20px; border: 1px solid rgba(240,190,100,.38); background: rgba(240,190,100,.12); display: grid; place-items: center; color: #f4d8a7; font-size: 30px; }
+.deal-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.deal-card { border-radius: 22px; border: 1px solid rgba(255,255,255,.09); overflow: hidden; background: linear-gradient(180deg, rgba(14,22,35,.82), rgba(10,16,30,.75)); box-shadow: 0 10px 28px rgba(0,0,0,.22); transition: transform 180ms ease, box-shadow 180ms ease; }
+.deal-card:hover { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(0,0,0,.3); }
+.deal-card.is-focused { box-shadow: 0 0 0 1px rgba(240,190,100,.45), 0 20px 40px rgba(240,190,100,.12); }
+.cover-wrap { position: relative; }
+.cover { width: 100%; height: 160px; object-fit: cover; display: block; }
+.cover--fallback { background: linear-gradient(135deg, rgba(30,49,78,.88), rgba(8,14,25,.95)); }
+.status { position: absolute; top: 10px; right: 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.16); background: rgba(8,12,22,.72); color: #dbe5f3; padding: 4px 9px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.status.is-green { border-color: rgba(82,213,139,.5); color: #52d58b; }
+.status.is-amber { border-color: rgba(240,190,100,.55); color: #f4d8a7; }
+.status.is-red { border-color: rgba(255,120,120,.55); color: #ffb5b5; }
+.status.is-slate { border-color: rgba(164,176,198,.45); color: #b8c2d6; }
+.deal-body { padding: 12px; display: grid; gap: 10px; }
+.deal-body h3 { margin: 0; font-size: 21px; line-height: 1.15; }
+.meta { margin: 0; color: rgba(255,255,255,.66); font-size: 13px; }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+.kpis div { border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); padding: 8px; }
+.kpis span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.56); }
+.kpis strong { font-size: 14px; color: #e8eef8; }
+.chips-inline { display: flex; gap: 8px; flex-wrap: wrap; }
+.mini-chip { border-radius: 999px; padding: 5px 9px; font-size: 11px; border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.72); }
+.actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.list-wrap { overflow: auto; }
+.deal-table { width: 100%; border-collapse: collapse; min-width: 820px; }
+.deal-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.58); border-bottom: 1px solid rgba(255,255,255,.12); padding: 10px; }
+.deal-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.82); }
+.deal-table tr.is-focused { background: rgba(240,190,100,.07); }
+.table-title { margin: 0; font-weight: 600; }
+.table-sub { margin: 3px 0 0; font-size: 12px; color: rgba(255,255,255,.55); }
+.table-actions { display: flex; gap: 8px; }
+.table-actions button { background: transparent; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; color: rgba(255,255,255,.78); padding: 4px 8px; font-size: 12px; }
+.pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.pagination p { margin: 0; color: rgba(255,255,255,.7); }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (max-width: 1240px) {
+  .deal-grid, .skeleton-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 980px) {
+  .control-bar { position: static; }
+  .control-bar__row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767px) {
+  .deals-control-center { padding-bottom: 84px; }
+  .control-bar { position: sticky; top: 64px; }
+  .control-bar__top { align-items: flex-start; flex-direction: column; }
+  .control-bar__row { grid-template-columns: 1fr; }
+  .deal-grid, .skeleton-grid { grid-template-columns: 1fr; }
+  .pagination { position: sticky; bottom: 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 8px; background: rgba(8,12,22,.86); backdrop-filter: blur(12px); }
+}
+</style>
