@@ -65,6 +65,14 @@ const isSubmitting = ref(false);
 const isSignup = computed(() => props.mode === "signup");
 
 function mapAuthError(err: unknown): string {
+  if (err instanceof Error) {
+    if (err.message.includes("Firebase config missing")) {
+      return "Auth is not configured. Add VITE_FIREBASE_* values to apps/web/.env.local and restart dev server.";
+    }
+    if (err.message.includes("Firebase auth failed to initialize")) {
+      return "Firebase auth could not initialize. Verify your Firebase web config values.";
+    }
+  }
   if (!(err instanceof FirebaseError)) return "Something went wrong. Please try again.";
   switch (err.code) {
     case "auth/invalid-email":

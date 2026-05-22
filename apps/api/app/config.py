@@ -10,6 +10,9 @@ class Settings(BaseSettings):
 
     # Firebase Auth settings (verification + issuer validation)
     firebase_project_id: str = ""
+    firebase_check_revoked: bool = False
+    firebase_service_account_path: str = ""
+    firebase_service_account_json: str = ""
     aws_region: str = "us-east-1"
     s3_bucket: str = "openmat-media-prod"
     s3_prefix: str = "superhero-platform"

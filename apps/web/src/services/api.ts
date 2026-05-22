@@ -89,8 +89,16 @@ export type CheckoutSessionCreateResponse = {
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function headers(token: string): HeadersInit {
+  const trimmed = token?.trim();
+  if (!trimmed) {
+    throw new Error("Authentication session expired.");
+  }
+  console.groupCollapsed("API AUTH");
+  console.log("hasToken", Boolean(trimmed));
+  console.log("tokenPrefix", trimmed.slice(0, 20));
+  console.groupEnd();
   return {
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${trimmed}`,
     "Content-Type": "application/json"
   };
 }

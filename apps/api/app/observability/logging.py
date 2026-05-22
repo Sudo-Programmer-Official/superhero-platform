@@ -26,6 +26,28 @@ class JsonFormatter(logging.Formatter):
             payload["status_code"] = record.status_code
         if hasattr(record, "duration_ms"):
             payload["duration_ms"] = record.duration_ms
+        if hasattr(record, "error"):
+            payload["error"] = record.error
+        if hasattr(record, "detail"):
+            payload["detail"] = record.detail
+        if hasattr(record, "project_id"):
+            payload["project_id"] = record.project_id
+        if hasattr(record, "token_aud"):
+            payload["token_aud"] = record.token_aud
+        if hasattr(record, "token_iss"):
+            payload["token_iss"] = record.token_iss
+        if hasattr(record, "token_sub"):
+            payload["token_sub"] = record.token_sub
+        if hasattr(record, "has_authorization_header"):
+            payload["has_authorization_header"] = record.has_authorization_header
+        if hasattr(record, "authorization_prefix"):
+            payload["authorization_prefix"] = record.authorization_prefix
+        if hasattr(record, "token_prefix"):
+            payload["token_prefix"] = record.token_prefix
+        if hasattr(record, "token_length"):
+            payload["token_length"] = record.token_length
+        if hasattr(record, "credential_source"):
+            payload["credential_source"] = record.credential_source
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload, ensure_ascii=True)

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from .api.v1.router import api_router
+from .auth.dependencies import verifier
 from .config import settings
 from .db import engine
 from .health.checks import check_db_schema, check_firebase_init, check_s3_access, check_stripe
@@ -84,3 +85,10 @@ async def health_schema() -> dict[str, str]:
         raise RuntimeError(f'Database schema "{settings.db_schema}" does not exist')
     logger.info("health.schema.check", extra={"event": "health.schema.check"})
     return {"status": "ok"}
+
+
+@app.get("/debug/firebase-auth")
+async def debug_firebase_auth() -> dict[str, object | str | bool | None]:
+    state = verifier.debug_state()
+    logger.info("debug.firebase_auth", extra={"event": "debug.firebase_auth", **state})
+    return state

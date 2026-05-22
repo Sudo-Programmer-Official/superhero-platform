@@ -28,7 +28,8 @@ class MeService:
     async def bootstrap_practitioner(
         self, principal: AuthPrincipal, payload: BootstrapPractitionerRequest
     ) -> BootstrapPractitionerResponse:
-        if principal.role not in {"practitioner", "admin", "super_admin"}:
+        # New Firebase users typically start as "customer"; allow them to bootstrap their own practitioner profile.
+        if principal.role not in {"customer", "practitioner", "admin", "super_admin"}:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role cannot bootstrap practitioner")
 
         existing = await self.session.scalar(select(Practitioner).where(Practitioner.firebase_uid == principal.uid))

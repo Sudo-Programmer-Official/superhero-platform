@@ -42,10 +42,10 @@ async def create_practitioner(
 async def update_practitioner(
     practitioner_id: UUID,
     payload: PractitionerUpdate,
-    _: AuthPrincipal = Depends(require_roles("super_admin", "admin", "practitioner")),
+    principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ):
-    return await PractitionerService(session).update_practitioner(practitioner_id, payload)
+    return await PractitionerService(session).update_practitioner(practitioner_id, payload, principal)
 
 
 @router.delete("/{practitioner_id}", status_code=status.HTTP_204_NO_CONTENT)

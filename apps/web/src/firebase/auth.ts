@@ -21,13 +21,23 @@ if (auth) {
   void setPersistence(auth, browserLocalPersistence);
 }
 
+function requireAuth() {
+  if (!hasFirebaseConfig) {
+    throw new Error("Firebase config missing. Add VITE_FIREBASE_* values in apps/web/.env.local");
+  }
+  if (!auth) {
+    throw new Error("Firebase auth failed to initialize.");
+  }
+  return auth;
+}
+
 export type AuthSnapshot = {
   user: User | null;
   token: string | null;
 };
 
 export function watchAuth(cb: (state: AuthSnapshot) => void): () => void {
-  if (!auth) {
+  if (!hasFirebaseConfig || !auth) {
     cb({ user: null, token: null });
     return () => undefined;
   }
@@ -39,32 +49,41 @@ export function watchAuth(cb: (state: AuthSnapshot) => void): () => void {
 }
 
 export async function loginWithGoogle(): Promise<void> {
-  if (!auth) return;
-  await signInWithPopup(auth, googleProvider);
+  const currentAuth = requireAuth();
+  await signInWithPopup(currentAuth, googleProvider);
 }
 
 export async function loginWithEmail(email: string, password: string): Promise<void> {
-  if (!auth) return;
-  await signInWithEmailAndPassword(auth, email, password);
+  const currentAuth = requireAuth();
+  await signInWithEmailAndPassword(currentAuth, email, password);
 }
 
 export async function signupWithEmail(name: string, email: string, password: string): Promise<void> {
-  if (!auth) return;
-  const result = await createUserWithEmailAndPassword(auth, email, password);
+  const currentAuth = requireAuth();
+  const result = await createUserWithEmailAndPassword(currentAuth, email, password);
   if (name.trim()) {
     await updateProfile(result.user, { displayName: name.trim() });
   }
 }
 
 export async function updateCurrentUserProfile(displayName: string, photoURL?: string | null): Promise<void> {
-  if (!auth?.currentUser) return;
-  await updateProfile(auth.currentUser, {
-    displayName: displayName.trim() || auth.currentUser.displayName || "",
+  const currentAuth = requireAuth();
+  if (!currentAuth.currentUser) return;
+  await updateProfile(currentAuth.currentUser, {
+    displayName: displayName.trim() || currentAuth.currentUser.displayName || "",
     photoURL: photoURL?.trim() || null
   });
 }
 
 export async function logout(): Promise<void> {
-  if (!auth) return;
-  await signOut(auth);
+  const currentAuth = requireAuth();
+  await signOut(currentAuth);
+}
+
+export async function getFreshIdToken(forceRefresh = false): Promise<string> {
+  const currentAuth = requireAuth();
+  if (!currentAuth.currentUser) {
+    throw new Error("Authentication session expired.");
+  }
+  return currentAuth.currentUser.getIdToken(forceRefresh);
 }

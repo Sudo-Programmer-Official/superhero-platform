@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Practitioner
+from app.auth.types import AuthPrincipal
 from app.repositories.practitioner_repository import PractitionerRepository
 from app.schemas.practitioner import PractitionerCreate, PractitionerUpdate
 from app.utils.slug import slugify
@@ -38,10 +39,16 @@ class PractitionerService:
         await self.session.commit()
         return created
 
-    async def update_practitioner(self, practitioner_id: UUID, payload: PractitionerUpdate) -> Practitioner:
+    async def update_practitioner(
+        self, practitioner_id: UUID, payload: PractitionerUpdate, principal: AuthPrincipal
+    ) -> Practitioner:
         model = await self.repo.get(practitioner_id)
         if not model:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practitioner not found")
+
+        # Admins can update any practitioner. Other authenticated users may only update their own profile.
+        if principal.role not in {"super_admin", "admin"} and model.firebase_uid != principal.uid:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
 
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(model, field, value)

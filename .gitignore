@@ -3,6 +3,10 @@ __pycache__/
 *.pyc
 .venv/
 .env
+.env.*
+**/secrets/
+**/firebase-service-account*.json
+**/*service-account*.json
 .DS_Store
 coverage/
 dist/

@@ -47,7 +47,7 @@ import { useRouter } from "vue-router";
 import AppButton from "../design-system/primitives/AppButton.vue";
 import AppInput from "../design-system/primitives/AppInput.vue";
 import BaseGlassCard from "../design-system/primitives/BaseGlassCard.vue";
-import { updateCurrentUserProfile } from "../firebase/auth";
+import { getFreshIdToken, updateCurrentUserProfile } from "../firebase/auth";
 import { updatePractitioner } from "../services/api";
 import { bootstrapMe, refreshMe, sessionState } from "../stores/session";
 
@@ -73,19 +73,22 @@ async function onContinue() {
     return;
   }
 
-  if (!sessionState.token) {
-    await router.push("/signin");
-    return;
-  }
-
   isSubmitting.value = true;
   try {
+    const freshToken = await getFreshIdToken(true);
+    if (!freshToken) {
+      errorMessage.value = "Authentication session expired.";
+      await router.push("/signin");
+      return;
+    }
+    sessionState.token = freshToken;
+
     await updateCurrentUserProfile(displayName.value.trim(), avatarUrl.value.trim() || null);
     await bootstrapMe(practiceName.value.trim());
     await refreshMe();
 
     if (sessionState.me?.practitioner_id) {
-      await updatePractitioner(sessionState.token, sessionState.me.practitioner_id, {
+      await updatePractitioner(freshToken, sessionState.me.practitioner_id, {
         name: practiceName.value.trim(),
         bio: category.value.trim() || null,
         location: location.value.trim() || null,

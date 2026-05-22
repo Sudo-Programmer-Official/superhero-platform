@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.config import settings
+from app.auth.firebase_admin_init import get_or_init_firebase_app
 from app.storage.s3_service import S3StorageService
 
 
@@ -30,13 +31,20 @@ async def check_db_schema(engine: AsyncEngine, schema: str) -> dict[str, Any]:
 def check_firebase_init() -> dict[str, Any]:
     if not settings.firebase_project_id:
         return {"status": "error", "detail": "FIREBASE_PROJECT_ID missing"}
+    if not settings.firebase_service_account_json.strip() and not settings.firebase_service_account_path.strip():
+        return {
+            "status": "error",
+            "detail": "Firebase Admin credentials missing. Set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_PATH",
+        }
     try:
         import firebase_admin
     except Exception as exc:
         return {"status": "error", "detail": f"firebase_admin unavailable: {exc}"}
 
-    if not firebase_admin._apps:  # type: ignore[attr-defined]
-        firebase_admin.initialize_app()
+    try:
+        get_or_init_firebase_app("health-check")
+    except Exception as exc:
+        return {"status": "error", "detail": f"firebase init failed: {exc}"}
     return {"status": "ok"}
 
 
@@ -55,4 +63,3 @@ def check_stripe() -> dict[str, Any]:
     stripe.api_key = settings.stripe_secret_key
     stripe.Balance.retrieve()
     return {"status": "ok"}
-
