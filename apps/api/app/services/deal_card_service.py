@@ -9,6 +9,7 @@ from app.repositories.deal_card_repository import DealCardRepository
 from app.repositories.practitioner_repository import PractitionerRepository
 from app.repositories.wallet_pass_repository import WalletPassRepository
 from app.schemas.deal_card import DealCardCreate, DealCardUpdate
+from app.services.activity_event_service import ActivityEventService
 from app.utils.slug import slugify
 
 
@@ -18,6 +19,7 @@ class DealCardService:
         self.repo = DealCardRepository(session)
         self.practitioner_repo = PractitionerRepository(session)
         self.wallet_repo = WalletPassRepository(session)
+        self.activity = ActivityEventService(session)
 
     async def list_deals(self) -> list[DealCard]:
         return await self.repo.list_all()
@@ -74,6 +76,13 @@ class DealCardService:
             wallet_enabled=payload.wallet_enabled,
         )
         created = await self.repo.create(model)
+        await self.activity.track(
+            actor_id=principal.uid,
+            entity_type="deal",
+            entity_id=str(created.id),
+            event_type="deal.created",
+            metadata={"title": created.title, "status": created.status},
+        )
         await self.session.commit()
         return created
 
@@ -97,11 +106,25 @@ class DealCardService:
             if not practitioner:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practitioner not found")
             model.share_link = f"/openmat/{practitioner.slug}/{model.slug}"
+            await self.activity.track(
+                actor_id=principal.uid,
+                entity_type="deal",
+                entity_id=str(model.id),
+                event_type="deal.published",
+                metadata={"title": model.title, "share_link": model.share_link},
+            )
         elif payload.status in {"expired", "canceled"}:
             wallet_passes = await self.wallet_repo.list_by_deal_id(model.id)
             for wallet_pass in wallet_passes:
                 if wallet_pass.status not in {"redeemed"}:
                     wallet_pass.status = "inactive"
+            await self.activity.track(
+                actor_id=principal.uid,
+                entity_type="deal",
+                entity_id=str(model.id),
+                event_type="deal.archived",
+                metadata={"title": model.title, "status": payload.status},
+            )
 
         await self.session.commit()
         await self.session.refresh(model)
@@ -145,6 +168,13 @@ class DealCardService:
             wallet_enabled=source.wallet_enabled,
         )
         created = await self.repo.create(model)
+        await self.activity.track(
+            actor_id=principal.uid,
+            entity_type="deal",
+            entity_id=str(created.id),
+            event_type="deal.duplicated",
+            metadata={"source_deal_id": str(source.id), "title": created.title},
+        )
         await self.session.commit()
         return created
 

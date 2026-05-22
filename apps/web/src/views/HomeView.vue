@@ -40,9 +40,9 @@
       <article class="data-panel">
         <h2>Recent activity</h2>
         <div class="activity-list">
-          <div v-for="activity in activities" :key="activity.text" class="activity-row">
+          <div v-for="activity in activities" :key="activity.id" class="activity-row">
             <div class="activity-row__left">
-              <img :src="activity.image" :alt="activity.name" />
+              <img :src="activity.image" alt="Activity" />
               <p>{{ activity.text }}</p>
             </div>
             <span>{{ activity.time }}</span>
@@ -54,8 +54,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import AppButton from "../design-system/primitives/AppButton.vue";
+import { activityLabel, activityTime, type ActivityEvent } from "../domain/activity";
+import { listActivityEvents } from "../services/api";
 import { sessionState } from "../stores/session";
 
 const firstName = computed(() => {
@@ -94,32 +96,24 @@ const upcoming = [
   }
 ];
 
-const activities = [
-  {
-    name: "Jessica",
-    text: "Jessica saved your pass",
-    time: "2m ago",
-    image: "https://images.unsplash.com/photo-1542204625-de293a5df31c?auto=format&fit=crop&w=120&q=80"
-  },
-  {
-    name: "Megan",
-    text: "Megan redeemed a pass",
-    time: "15m ago",
-    image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=120&q=80"
-  },
-  {
-    name: "New booking",
-    text: "New booking for Breathwork Journey",
-    time: "1h ago",
+const activityEvents = ref<ActivityEvent[]>([]);
+const activities = computed(() =>
+  activityEvents.value.slice(0, 8).map((event) => ({
+    id: event.id,
+    text: activityLabel(event),
+    time: activityTime(event.created_at),
     image: "https://images.unsplash.com/photo-1531891437562-4301cf35b7e4?auto=format&fit=crop&w=120&q=80"
-  },
-  {
-    name: "Payout",
-    text: "Payout of $930 sent",
-    time: "2h ago",
-    image: "https://images.unsplash.com/photo-1557862921-37829c790f19?auto=format&fit=crop&w=120&q=80"
+  }))
+);
+
+onMounted(async () => {
+  if (!sessionState.token) return;
+  try {
+    activityEvents.value = await listActivityEvents(sessionState.token);
+  } catch {
+    activityEvents.value = [];
   }
-];
+});
 </script>
 
 <style scoped>

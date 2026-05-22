@@ -15,6 +15,7 @@ from app.repositories.deal_card_repository import DealCardRepository
 from app.repositories.practitioner_repository import PractitionerRepository
 from app.repositories.wallet_pass_repository import WalletPassRepository
 from app.schemas.payment import CheckoutSessionCreateRequest, CheckoutSessionCreateResponse
+from app.services.activity_event_service import ActivityEventService
 
 
 class PaymentService:
@@ -23,6 +24,7 @@ class PaymentService:
         self.deal_repo = DealCardRepository(session)
         self.practitioner_repo = PractitionerRepository(session)
         self.wallet_repo = WalletPassRepository(session)
+        self.activity = ActivityEventService(session)
         stripe.api_key = settings.stripe_secret_key
 
     def _assert_configured(self) -> None:
@@ -103,6 +105,13 @@ class PaymentService:
         )
         self.session.add(booking)
         await self.session.flush()
+        await self.activity.track(
+            actor_id=str(customer.id),
+            entity_type="booking",
+            entity_id=str(booking.id),
+            event_type="booking.created",
+            metadata={"booking_number": booking.booking_number, "deal_id": str(deal.id), "quantity": purchased_qty},
+        )
 
         wallet_pass = WalletPass(
             deal_id=deal_id,
@@ -115,8 +124,22 @@ class PaymentService:
         )
         self.session.add(wallet_pass)
         await self.session.flush()
+        await self.activity.track(
+            actor_id=str(customer.id),
+            entity_type="wallet_pass",
+            entity_id=str(wallet_pass.id),
+            event_type="wallet.generated",
+            metadata={"deal_id": str(deal.id), "booking_id": str(booking.id)},
+        )
         booking.wallet_pass_id = wallet_pass.id
         booking.qr_code = wallet_pass.qr_code
+        await self.activity.track(
+            actor_id=str(customer.id),
+            entity_type="booking",
+            entity_id=str(booking.id),
+            event_type="booking.paid",
+            metadata={"total_amount": str(booking.total_amount), "currency": booking.currency},
+        )
         await self.session.commit()
 
     async def create_checkout_session(self, payload: CheckoutSessionCreateRequest) -> CheckoutSessionCreateResponse:

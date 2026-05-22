@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 class Settings(BaseSettings):
@@ -48,10 +49,26 @@ class Settings(BaseSettings):
     def database_url_async(self) -> str:
         url = self._clean_url(self.database_url)
         if url.startswith("postgres://"):
-            return "postgresql+asyncpg://" + url[len("postgres://") :]
+            url = "postgresql+asyncpg://" + url[len("postgres://") :]
         if url.startswith("postgresql://"):
-            return "postgresql+asyncpg://" + url[len("postgresql://") :]
-        return url
+            url = "postgresql+asyncpg://" + url[len("postgresql://") :]
+        return self._normalize_asyncpg_url(url)
+
+    @staticmethod
+    def _normalize_asyncpg_url(url: str) -> str:
+        # asyncpg does not support `sslmode`; map it to `ssl` for runtime URLs.
+        if not url.startswith("postgresql+asyncpg://"):
+            return url
+        parsed = urlsplit(url)
+        query_pairs = parse_qsl(parsed.query, keep_blank_values=True)
+        normalized: list[tuple[str, str]] = []
+        for key, value in query_pairs:
+            if key == "sslmode":
+                if value.strip():
+                    normalized.append(("ssl", value))
+                continue
+            normalized.append((key, value))
+        return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(normalized), parsed.fragment))
 
     @property
     def database_url_sync_resolved(self) -> str:
