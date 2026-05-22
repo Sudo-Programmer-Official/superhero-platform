@@ -8,7 +8,7 @@
       <div class="dashboard-top__actions">
         <button class="icon-btn" type="button" aria-label="Search">⌕</button>
         <button class="icon-btn" type="button" aria-label="Notifications">◌</button>
-        <AppButton variant="primary" size="nav" context="navbar" class="create-deal-btn">+ Create deal</AppButton>
+        <AppButton tag="RouterLink" to="/dashboard/deals/create" variant="primary" size="nav" context="navbar" class="create-deal-btn">+ Create deal</AppButton>
       </div>
     </header>
 
@@ -124,11 +124,14 @@ const activities = [
 
 <style scoped>
 .dashboard-panel {
-  border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 28px;
+  width: 100%;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  border-radius: 0;
+  border: 0;
+  padding: 20px 24px 24px;
   background: linear-gradient(180deg, rgba(8, 12, 28, 0.82), rgba(5, 10, 24, 0.72));
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.24);
+  box-shadow: none;
 }
 
 .dashboard-top {
@@ -352,8 +355,9 @@ const activities = [
 
 @media (max-width: 1023px) {
   .dashboard-panel {
-    padding: 24px 20px;
-    border-radius: 24px;
+    min-height: calc(100dvh - 58px);
+    padding: 18px 14px 24px;
+    border-radius: 0;
   }
 
   .dashboard-top {

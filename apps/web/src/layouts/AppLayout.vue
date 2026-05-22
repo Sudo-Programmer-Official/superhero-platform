@@ -14,20 +14,26 @@
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'dashboard' }" to="/dashboard">Home</RouterLink>
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'deals' }" to="/dashboard/deals">Deals</RouterLink>
           <button class="sidebar__item" type="button">Bookings</button>
-          <button class="sidebar__item" type="button">Wallet Passes</button>
-          <button class="sidebar__item" type="button">Redemptions</button>
+          <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'wallet-passes' }" to="/dashboard/wallet-passes">Wallet Passes</RouterLink>
+          <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'redemptions' }" to="/dashboard/redemptions">Redemptions</RouterLink>
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'profile' }" to="/dashboard/profile">Profile</RouterLink>
           <button class="sidebar__item" type="button">Payouts</button>
           <button class="sidebar__item" type="button">Settings</button>
         </nav>
 
-        <div class="sidebar__profile">
-          <img src="https://images.unsplash.com/photo-1542204625-de293a5df31c?auto=format&fit=crop&w=120&q=80" alt="Marla profile" />
+        <RouterLink class="sidebar__profile" to="/dashboard/profile">
+          <img
+            v-if="avatarSrc && !avatarErrored"
+            :src="avatarSrc"
+            :alt="`${displayName} profile`"
+            @error="avatarErrored = true"
+          />
+          <div v-else class="sidebar__avatar-fallback">{{ avatarInitials }}</div>
           <div>
-            <p>Marla B.</p>
+            <p>{{ displayName }}</p>
             <span>View profile</span>
           </div>
-        </div>
+        </RouterLink>
       </aside>
 
       <main class="dashboard-main">
@@ -47,8 +53,8 @@
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'dashboard' }" to="/dashboard" @click="isDrawerOpen = false">Home</RouterLink>
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'deals' }" to="/dashboard/deals" @click="isDrawerOpen = false">Deals</RouterLink>
         <button class="sidebar__item" type="button">Bookings</button>
-        <button class="sidebar__item" type="button">Wallet Passes</button>
-        <button class="sidebar__item" type="button">Redemptions</button>
+        <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'wallet-passes' }" to="/dashboard/wallet-passes" @click="isDrawerOpen = false">Wallet Passes</RouterLink>
+        <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'redemptions' }" to="/dashboard/redemptions" @click="isDrawerOpen = false">Redemptions</RouterLink>
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'profile' }" to="/dashboard/profile" @click="isDrawerOpen = false">Profile</RouterLink>
       </nav>
 
@@ -58,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppButton from "../design-system/primitives/AppButton.vue";
 import GradientOrb from "../design-system/primitives/GradientOrb.vue";
@@ -68,6 +74,21 @@ import { sessionState } from "../stores/session";
 const route = useRoute();
 const router = useRouter();
 const isDrawerOpen = ref(false);
+const avatarErrored = ref(false);
+
+const displayName = computed(() => {
+  return sessionState.user?.displayName?.trim() || sessionState.me?.practitioner_name?.trim() || "Demo User";
+});
+
+const avatarSrc = computed(() => sessionState.user?.photoURL || "");
+
+const avatarInitials = computed(() => {
+  const parts = displayName.value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  return parts.map((part) => part[0]?.toUpperCase() || "").join("") || "DU";
+});
 
 async function onLogout() {
   await logout();
@@ -82,26 +103,32 @@ async function onLogout() {
 <style scoped>
 .app-shell {
   position: relative;
-  min-height: calc(100dvh - var(--safe-top));
+  min-height: 100dvh;
   overflow-x: clip;
-  padding: 24px 28px 28px;
+  width: 100%;
+  padding: 0;
 }
 
 .dashboard-layout {
-  margin: 0 auto;
-  max-width: 1440px;
+  width: 100%;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 260px 1fr;
-  gap: 24px;
+  gap: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .sidebar {
-  min-height: calc(100dvh - 56px);
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: 24px 18px;
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 16px 18px;
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 0;
+  border-top: 0;
+  border-bottom: 0;
   background: linear-gradient(180deg, rgba(8, 12, 28, 0.92), rgba(5, 10, 24, 0.86));
   backdrop-filter: blur(18px);
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.24);
@@ -150,28 +177,39 @@ async function onLogout() {
   font-size: 15px;
   font-weight: 500;
   text-decoration: none;
-  transition: all 180ms ease;
+  transition: all 180ms ease, transform 180ms ease;
 }
 
 .sidebar__item:hover {
-  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.045);
   color: rgba(255, 255, 255, 0.92);
 }
 
 .sidebar__item.is-active {
   color: #f4d8a7;
-  border-color: rgba(240, 190, 100, 0.22);
-  background: linear-gradient(180deg, rgba(240, 190, 100, 0.22), rgba(240, 190, 100, 0.12));
+  border-color: rgba(240, 190, 100, 0.2);
+  background: linear-gradient(180deg, rgba(240, 190, 100, 0.18), rgba(240, 190, 100, 0.1));
+  box-shadow: inset 0 0 0 1px rgba(240, 190, 100, 0.08), 0 0 14px rgba(240, 190, 100, 0.12);
 }
 
 .sidebar__profile {
   margin-top: auto;
-  padding: 14px;
+  padding: 12px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
   display: flex;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
+  transition: background 180ms ease, transform 180ms ease, border-color 180ms ease;
+}
+
+.sidebar__profile:hover {
+  transform: translateY(-1px);
+  border-color: rgba(240, 190, 100, 0.24);
+  background: linear-gradient(180deg, rgba(240, 190, 100, 0.08), rgba(255, 255, 255, 0.04));
 }
 
 .sidebar__profile img {
@@ -181,21 +219,38 @@ async function onLogout() {
   object-fit: cover;
 }
 
+.sidebar__avatar-fallback {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #f4d8a7;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: linear-gradient(145deg, rgba(244, 201, 125, 0.25), rgba(95, 73, 44, 0.38));
+  border: 1px solid rgba(240, 190, 100, 0.34);
+}
+
 .sidebar__profile p {
   margin: 0;
   font-size: 15px;
   font-weight: 700;
+  color: rgba(255, 255, 255, 0.94);
 }
 
 .sidebar__profile span {
   display: block;
-  margin-top: 4px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.62);
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.66);
 }
 
 .dashboard-main {
   min-width: 0;
+  min-height: 100dvh;
+  padding: 0;
 }
 
 .drawer-toggle,
@@ -206,11 +261,13 @@ async function onLogout() {
 
 @media (max-width: 1023px) {
   .app-shell {
-    padding: 16px 20px 24px;
+    padding: 0;
   }
 
   .dashboard-layout {
     grid-template-columns: 1fr;
+    min-height: 100dvh;
+    padding: 0;
   }
 
   .sidebar {
@@ -272,6 +329,24 @@ async function onLogout() {
   .drawer.is-open {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .dashboard-layout {
+    grid-template-columns: 220px 1fr;
+    gap: 0;
+    padding: 0;
+  }
+
+  .sidebar {
+    padding: 22px 12px 14px;
+  }
+
+  .sidebar__item {
+    height: 44px;
+    padding-inline: 12px;
+    font-size: 14px;
   }
 }
 </style>

@@ -43,8 +43,13 @@ export function watchAuth(cb: (state: AuthSnapshot) => void): () => void {
   }
 
   return onAuthStateChanged(auth, async (user) => {
-    const token = user ? await user.getIdToken() : null;
-    cb({ user, token });
+    try {
+      const token = user ? await user.getIdToken() : null;
+      cb({ user, token });
+    } catch (err) {
+      console.warn("[web] Firebase token refresh failed", err);
+      cb({ user: null, token: null });
+    }
   });
 }
 
