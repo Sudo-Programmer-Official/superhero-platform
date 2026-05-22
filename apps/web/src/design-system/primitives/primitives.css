@@ -1,0 +1,28 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
+}
+
+.content-wrap {
+  width: min(var(--container-max), calc(100% - (var(--container-pad-mobile) * 2)));
+  margin-inline: auto;
+}
+
+@media (min-width: 768px) {
+  .content-wrap {
+    width: min(var(--container-max), calc(100% - (var(--container-pad-desktop) * 2)));
+  }
+}

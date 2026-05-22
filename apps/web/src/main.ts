@@ -2,8 +2,8 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import { hasFirebaseConfig } from "./firebase/config";
+import "./design-system/index.css";
 import "./style.css";
-import "./shared/styles/foundation.css";
 
 if (!hasFirebaseConfig) {
   console.warn("[web] Firebase config is incomplete. Fill VITE_FIREBASE_* env vars.");

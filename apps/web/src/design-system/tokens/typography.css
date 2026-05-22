@@ -1,0 +1,15 @@
+:root {
+  --font-sans: "Inter", "SF Pro Text", "Avenir Next", sans-serif;
+
+  --text-hero: clamp(40px, 7vw, 84px);
+  --text-display: clamp(30px, 3.2vw, 44px);
+  --text-body-lg: clamp(16px, 1.2vw, 18px);
+  --text-body: 16px;
+  --text-caption: 12px;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  :root {
+    --text-hero: 56px;
+  }
+}

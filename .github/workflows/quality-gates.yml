@@ -15,15 +15,15 @@ jobs:
         env:
           ENV: production
           DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
-          DATABASE_URL_SYNC: ${{ secrets.RENDER_DATABASE_URL_SYNC }}
+          DATABASE_URL_SYNC: ${{ secrets.RENDER_DATABASE_URL_SYNC || secrets.RENDER_DATABASE_URL }}
           DB_SCHEMA: ${{ secrets.RENDER_DB_SCHEMA }}
           CORS_ORIGINS: ${{ secrets.RENDER_CORS_ORIGINS }}
           FIREBASE_PROJECT_ID: ${{ secrets.RENDER_FIREBASE_PROJECT_ID }}
           AWS_REGION: ${{ secrets.RENDER_AWS_REGION }}
           S3_BUCKET: ${{ secrets.RENDER_S3_BUCKET }}
           S3_PREFIX: ${{ secrets.RENDER_S3_PREFIX }}
-          LOG_LEVEL: ${{ secrets.RENDER_LOG_LEVEL }}
-          LOG_FORMAT: ${{ secrets.RENDER_LOG_FORMAT }}
+          LOG_LEVEL: ${{ secrets.RENDER_LOG_LEVEL || 'INFO' }}
+          LOG_FORMAT: ${{ secrets.RENDER_LOG_FORMAT || 'json' }}
           PAYMENTS_TEST_MODE: ${{ secrets.RENDER_PAYMENTS_TEST_MODE }}
           STRIPE_SECRET_KEY: ${{ secrets.RENDER_STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.RENDER_STRIPE_WEBHOOK_SECRET }}

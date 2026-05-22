@@ -1,0 +1,33 @@
+:root {
+  --bg-primary: #060d19;
+  --bg-secondary: #0b1728;
+  --bg-tertiary: #12233a;
+
+  --surface-0: var(--bg-primary);
+  --surface-1: #101c2f;
+  --surface-2: #16243a;
+
+  --card-bg: rgba(18, 28, 44, 0.84);
+  --card-bg-strong: rgba(15, 24, 38, 0.94);
+  --card-border: #2a4062;
+
+  --glass-bg: rgba(204, 222, 255, 0.1);
+  --glass-bg-strong: rgba(204, 222, 255, 0.16);
+  --glass-border: rgba(204, 222, 255, 0.26);
+
+  --text-primary: #f4f8ff;
+  --text-secondary: #afbdd6;
+  --text-muted: #8498bc;
+
+  --text-0: var(--text-primary);
+  --text-1: var(--text-secondary);
+
+  --accent: #f4c97d;
+  --accent-soft: #f8ddb1;
+  --accent-glow: rgba(244, 201, 125, 0.38);
+
+  --brand-blue: #56b5ff;
+  --brand-blue-glow: rgba(86, 181, 255, 0.34);
+  --brand-violet: #8f6dff;
+  --brand-violet-glow: rgba(143, 109, 255, 0.38);
+}

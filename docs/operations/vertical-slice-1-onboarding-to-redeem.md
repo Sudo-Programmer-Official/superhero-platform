@@ -78,3 +78,8 @@ cd apps/api
 alembic upgrade head
 python3 scripts/seed_demo_data.py
 ```
+
+Alternative one-command bootstrap:
+```bash
+pnpm bootstrap:db:seed
+```

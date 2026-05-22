@@ -1,0 +1,7 @@
+body {
+  background:
+    radial-gradient(circle at 12% 15%, rgba(56, 88, 146, 0.38) 0%, transparent 38%),
+    radial-gradient(circle at 88% 10%, rgba(52, 132, 193, 0.2) 0%, transparent 30%),
+    linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 52%);
+  color: var(--text-primary);
+}

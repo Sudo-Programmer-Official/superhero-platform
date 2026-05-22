@@ -1,0 +1,10 @@
+/* Placeholder for future light mode. Keep dark as canonical for MVP. */
+/* Example future override:
+:root[data-theme='light'] {
+  --surface-0: #f5f7fb;
+  --surface-1: #ffffff;
+  --surface-2: #eef2f8;
+  --text-0: #111827;
+  --text-1: #4b5563;
+}
+*/

@@ -1,0 +1,13 @@
+:root {
+  --shadow-soft: 0 16px 28px rgba(0, 0, 0, 0.24);
+  --shadow-elevated: 0 26px 48px rgba(0, 0, 0, 0.34);
+  --shadow-glow: 0 0 0 1px rgba(244, 201, 125, 0.15), 0 12px 36px rgba(244, 201, 125, 0.16);
+  --shadow-glass: 0 10px 40px rgba(7, 13, 22, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-xl: 1.4rem;
+
+  --radius-card: var(--radius-xl);
+  --radius-panel: 1rem;
+}

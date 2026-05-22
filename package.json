@@ -9,6 +9,8 @@
     "check:env:web": "bash ./scripts/validate-env.sh web",
     "test:api": "cd apps/api && pytest -q",
     "test:web:smoke": "pnpm --filter @superhero/web test:smoke",
+    "bootstrap:db": "cd apps/api && python3 scripts/bootstrap_db.py",
+    "bootstrap:db:seed": "cd apps/api && python3 scripts/bootstrap_db.py --seed",
     "seed:demo": "cd apps/api && python3 scripts/seed_demo_data.py",
     "dev:web": "pnpm --filter @superhero/web dev",
     "dev:admin": "pnpm --filter @superhero/admin dev",

@@ -14,8 +14,7 @@ Mobile-first platform for real-world practitioners to create offers/events, acce
 
 ## Quick Start
 1. Copy `.env.example` to `.env`
-2. Start Postgres locally:
-   - `docker compose up -d db`
+2. Configure DB env vars in `apps/api/.env` (AWS RDS is default).
 3. Start API:
    - `cd apps/api && python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
    - `alembic upgrade head`
@@ -24,6 +23,9 @@ Mobile-first platform for real-world practitioners to create offers/events, acce
    - `pnpm install`
    - `pnpm dev:web`
    - `pnpm dev:admin`
+
+Optional local Postgres fallback:
+- `USE_DOCKER_DB=1 pnpm dev:stack`
 
 ## Auth + Data Direction
 - Auth/session layer: Firebase Auth

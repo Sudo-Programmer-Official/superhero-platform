@@ -1,12 +1,15 @@
 import { createRouter, createWebHistory } from "vue-router";
 import AppLayout from "../layouts/AppLayout.vue";
 import AuthLayout from "../layouts/AuthLayout.vue";
-import AuthView from "../views/AuthView.vue";
 import DealsView from "../views/DealsView.vue";
 import HomeView from "../views/HomeView.vue";
+import LandingView from "../views/LandingView.vue";
+import OnboardingView from "../views/OnboardingView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import PublicProfileView from "../views/PublicProfileView.vue";
 import PublicDealView from "../views/PublicDealView.vue";
+import SigninView from "../views/SigninView.vue";
+import SignupView from "../views/SignupView.vue";
 import { initSessionWatcher, sessionState } from "../stores/session";
 import { evaluateRouteGuard } from "./guard";
 
@@ -15,6 +18,20 @@ initSessionWatcher();
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: "/",
+      name: "landing",
+      component: LandingView
+    },
+    {
+      path: "/",
+      component: AuthLayout,
+      children: [
+        { path: "signin", name: "signin", component: SigninView },
+        { path: "signup", name: "signup", component: SignupView },
+        { path: "onboarding", name: "onboarding", component: OnboardingView, meta: { requiresAuth: true } }
+      ]
+    },
     {
       path: "/openmat/:practitionerSlug",
       name: "public-profile",
@@ -29,21 +46,16 @@ const router = createRouter({
       path: "/",
       component: AppLayout,
       children: [
-        { path: "", name: "home", component: HomeView, meta: { requiresAuth: true } },
-        { path: "deals", name: "deals", component: DealsView, meta: { requiresAuth: true } },
+        { path: "dashboard", name: "dashboard", component: HomeView, meta: { requiresAuth: true } },
+        { path: "dashboard/deals", name: "deals", component: DealsView, meta: { requiresAuth: true } },
         {
-          path: "profile",
+          path: "dashboard/profile",
           name: "profile",
           component: ProfileView,
           meta: { requiresAuth: true, roles: ["practitioner", "admin", "super_admin"] }
         }
       ]
-    },
-    {
-      path: "/auth",
-      component: AuthLayout,
-      children: [{ path: "", name: "auth", component: AuthView }]
-    },
+    }
   ]
 });
 

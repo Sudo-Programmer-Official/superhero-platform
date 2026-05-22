@@ -1,0 +1,29 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+body {
+  font-family: "Inter", var(--font-sans);
+  color: var(--text-primary);
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: var(--text-caption);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.kicker {
+  margin: 0;
+  font-size: var(--text-caption);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #99b8e8;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  line-height: 1.55;
+}

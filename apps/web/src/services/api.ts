@@ -16,6 +16,13 @@ export type PractitionerPublicPayload = {
   location: string | null;
 };
 
+export type PractitionerUpdatePayload = {
+  name?: string;
+  bio?: string | null;
+  profile_image?: string | null;
+  location?: string | null;
+};
+
 export type DealCardCreatePayload = {
   practitioner_id: string;
   title: string;
@@ -101,6 +108,20 @@ export async function bootstrapPractitioner(token: string, name: string): Promis
     body: JSON.stringify({ name })
   });
   if (!res.ok) throw new Error(`Failed bootstrap: ${res.status}`);
+}
+
+export async function updatePractitioner(
+  token: string,
+  practitionerId: string,
+  payload: PractitionerUpdatePayload
+): Promise<PractitionerPublicPayload> {
+  const res = await fetch(`${API_BASE}/api/v1/practitioners/${practitionerId}`, {
+    method: "PATCH",
+    headers: headers(token),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Failed update practitioner: ${res.status}`);
+  return res.json() as Promise<PractitionerPublicPayload>;
 }
 
 export async function createCheckoutSession(

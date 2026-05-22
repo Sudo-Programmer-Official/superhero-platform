@@ -9,14 +9,19 @@
     "test:smoke": "vitest run"
   },
   "dependencies": {
+    "element-plus": "^2.14.0",
     "firebase": "^12.13.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
     "@vitejs/plugin-vue": "^5.2.1",
+    "autoprefixer": "^10.5.0",
     "happy-dom": "^20.9.0",
     "jsdom": "^29.1.1",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.0",
     "vite": "^6.2.0",
     "vitest": "^4.1.7"
   }

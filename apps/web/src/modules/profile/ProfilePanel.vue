@@ -1,47 +1,56 @@
 <template>
-  <section class="zone-card-stack">
-    <article class="deal-card">
-      <p class="deal-meta">Profile</p>
-      <p class="deal-title">Practitioner bootstrap</p>
-      <button
-        v-if="sessionState.me && sessionState.me.role === 'practitioner' && !sessionState.me.practitioner_id"
-        class="ghost-btn"
-        @click="onBootstrap"
-      >
-        Bootstrap practitioner profile
-      </button>
-      <p class="subtitle" v-else-if="sessionState.me?.practitioner_id">
-        Practitioner linked: {{ sessionState.me.practitioner_name || sessionState.me.practitioner_id }}
-      </p>
-      <p class="subtitle" v-if="sessionState.me?.practitioner_slug">
-        Public URL: /openmat/{{ sessionState.me.practitioner_slug }}
-      </p>
-    </article>
-
-    <article class="deal-card">
-      <p class="deal-meta">Redeem Operations</p>
-      <p class="deal-title">Manual redeem and restore</p>
-      <div class="auth-grid">
-        <input v-model="qrCode" class="field" placeholder="QR code" />
-        <button class="ghost-btn" @click="onRedeem">Redeem by QR</button>
-      </div>
-      <div class="auth-grid" v-if="walletPasses.length">
-        <button
-          v-for="pass in walletPasses"
-          :key="pass.id"
-          class="ghost-btn"
-          @click="onRestore(pass.id)"
+  <section class="grid gap-3">
+    <DealCardPattern>
+      <template #meta>Profile</template>
+      <template #title>Practitioner bootstrap</template>
+      <template #actions>
+        <AppButton
+          v-if="sessionState.me && sessionState.me.role === 'practitioner' && !sessionState.me.practitioner_id"
+          variant="primary"
+          @click="onBootstrap"
         >
-          Restore {{ pass.id.slice(0, 8) }} ({{ pass.status }})
-        </button>
-      </div>
-    </article>
+          Bootstrap practitioner profile
+        </AppButton>
+      </template>
+      <template #subtitle>
+        <span v-if="sessionState.me?.practitioner_id">
+          Practitioner linked: {{ sessionState.me.practitioner_name || sessionState.me.practitioner_id }}
+        </span>
+        <br v-if="sessionState.me?.practitioner_id && sessionState.me?.practitioner_slug" />
+        <span v-if="sessionState.me?.practitioner_slug">
+          Public URL: /openmat/{{ sessionState.me.practitioner_slug }}
+        </span>
+      </template>
+    </DealCardPattern>
+
+    <DealCardPattern>
+      <template #meta>Redeem Operations</template>
+      <template #title>Manual redeem and restore</template>
+      <template #actions>
+        <div class="grid gap-2">
+          <AppInput v-model="qrCode" placeholder="QR code" />
+          <AppButton @click="onRedeem">Redeem by QR</AppButton>
+        </div>
+        <div class="grid gap-2" v-if="walletPasses.length">
+          <AppButton
+            v-for="pass in walletPasses"
+            :key="pass.id"
+            @click="onRestore(pass.id)"
+          >
+            Restore {{ pass.id.slice(0, 8) }} ({{ pass.status }})
+          </AppButton>
+        </div>
+      </template>
+    </DealCardPattern>
   </section>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
+import DealCardPattern from "../../design-system/patterns/DealCardPattern.vue";
+import AppButton from "../../design-system/primitives/AppButton.vue";
+import AppInput from "../../design-system/primitives/AppInput.vue";
 import { listWalletPasses, redeemWalletPass, restoreWalletPass, type WalletPassPayload } from "../../services/api";
 import { bootstrapMe, sessionState } from "../../stores/session";
 

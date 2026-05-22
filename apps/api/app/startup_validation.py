@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from fastapi import HTTPException
 
 from app.config import settings
@@ -10,9 +8,22 @@ from app.health.checks import check_db, check_db_schema, check_firebase_init, ch
 
 
 def _missing_required_env() -> list[str]:
+    key_to_value = {
+        "DATABASE_URL": settings.database_url,
+        "DB_SCHEMA": settings.db_schema,
+        "CORS_ORIGINS": settings.cors_origins,
+        "FIREBASE_PROJECT_ID": settings.firebase_project_id,
+        "AWS_REGION": settings.aws_region,
+        "S3_BUCKET": settings.s3_bucket,
+        "S3_PREFIX": settings.s3_prefix,
+        "LOG_LEVEL": settings.log_level,
+        "STRIPE_SECRET_KEY": settings.stripe_secret_key,
+        "STRIPE_WEBHOOK_SECRET": settings.stripe_webhook_secret,
+    }
     missing: list[str] = []
     for key in settings.required_env_keys:
-        if not os.getenv(key):
+        value = key_to_value.get(key)
+        if value is None or not str(value).strip():
             missing.append(key)
     return missing
 
@@ -46,4 +57,3 @@ def should_fail_startup(exc: Exception) -> bool:
     if isinstance(exc, HTTPException):
         return settings.startup_validation_strict
     return settings.startup_validation_strict
-
