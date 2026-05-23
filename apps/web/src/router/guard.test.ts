@@ -6,7 +6,7 @@ describe("route guard", () => {
   it("redirects unauthenticated users from protected routes", () => {
     const result = evaluateRouteGuard(
       { name: "dashboard", meta: { requiresAuth: true } },
-      { ready: true, token: null, me: null }
+      { ready: true, token: null, me: null, meLoaded: false }
     );
     expect(result).toEqual({ name: "signin" });
   });
@@ -14,7 +14,7 @@ describe("route guard", () => {
   it("redirects authenticated users away from auth page", () => {
     const result = evaluateRouteGuard(
       { name: "signin", meta: {} },
-      { ready: true, token: "token", me: { role: "customer", practitioner_id: "p1" } }
+      { ready: true, token: "token", me: { role: "customer", practitioner_id: "p1" }, meLoaded: true }
     );
     expect(result).toEqual({ name: "dashboard" });
   });
@@ -22,7 +22,7 @@ describe("route guard", () => {
   it("redirects authenticated users without practitioner profile to onboarding", () => {
     const result = evaluateRouteGuard(
       { name: "deals", meta: { requiresAuth: true } },
-      { ready: true, token: "token", me: { role: "practitioner", practitioner_id: null } }
+      { ready: true, token: "token", me: { role: "practitioner", practitioner_id: null }, meLoaded: true }
     );
     expect(result).toEqual({ name: "onboarding" });
   });
@@ -30,8 +30,16 @@ describe("route guard", () => {
   it("blocks role-restricted route access", () => {
     const result = evaluateRouteGuard(
       { name: "profile", meta: { requiresAuth: true, roles: ["practitioner", "admin", "super_admin"] } },
-      { ready: true, token: "token", me: { role: "customer", practitioner_id: "p1" } }
+      { ready: true, token: "token", me: { role: "customer", practitioner_id: "p1" }, meLoaded: true }
     );
     expect(result).toEqual({ name: "dashboard" });
+  });
+
+  it("does not force onboarding before /me resolves", () => {
+    const result = evaluateRouteGuard(
+      { name: "dashboard", meta: { requiresAuth: true } },
+      { ready: true, token: "token", me: null, meLoaded: false }
+    );
+    expect(result).toEqual(true);
   });
 });

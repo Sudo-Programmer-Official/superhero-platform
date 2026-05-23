@@ -4,6 +4,7 @@ export type GuardState = {
   ready: boolean;
   token: string | null;
   me: { role: string; practitioner_id?: string | null } | null;
+  meLoaded?: boolean;
 };
 
 export function evaluateRouteGuard(
@@ -16,6 +17,7 @@ export function evaluateRouteGuard(
 
   if (!state.ready) return true;
   if (to.meta.requiresAuth && !state.token) return { name: "signin" };
+  if (to.meta.requiresAuth && state.token && !state.meLoaded) return true;
   if (
     to.meta.requiresAuth &&
     state.token &&

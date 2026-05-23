@@ -36,7 +36,7 @@
         </div>
         <div class="topbar-right">
           <span class="role-badge">{{ roleLabel }}</span>
-          <SessionMenu />
+          <SessionMenu compact />
         </div>
       </div>
       <div class="admin-main__view">

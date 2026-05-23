@@ -21,25 +21,12 @@
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'settings' }" to="/dashboard/settings">Settings</RouterLink>
         </nav>
 
-        <RouterLink class="sidebar__profile" to="/dashboard/profile">
-          <img
-            v-if="avatarSrc && !avatarErrored"
-            :src="avatarSrc"
-            :alt="`${displayName} profile`"
-            @error="avatarErrored = true"
-          />
-          <div v-else class="sidebar__avatar-fallback">{{ avatarInitials }}</div>
-          <div>
-            <p>{{ displayName }}</p>
-            <span>View profile</span>
-          </div>
-        </RouterLink>
+        <div class="sidebar__profile">
+          <SessionMenu inline />
+        </div>
       </aside>
 
       <main class="dashboard-main">
-        <div class="dashboard-main__topbar">
-          <SessionMenu />
-        </div>
         <RouterView />
       </main>
     </div>
@@ -71,29 +58,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useRoute } from "vue-router";
 import SessionMenu from "../components/SessionMenu.vue";
 import GradientOrb from "../design-system/primitives/GradientOrb.vue";
-import { sessionState } from "../stores/session";
 
 const route = useRoute();
 const isDrawerOpen = ref(false);
-const avatarErrored = ref(false);
-
-const displayName = computed(() => {
-  return sessionState.user?.displayName?.trim() || sessionState.me?.practitioner_name?.trim() || "Demo User";
-});
-
-const avatarSrc = computed(() => sessionState.user?.photoURL || "");
-
-const avatarInitials = computed(() => {
-  const parts = displayName.value
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-  return parts.map((part) => part[0]?.toUpperCase() || "").join("") || "DU";
-});
 </script>
 
 <style scoped>
@@ -194,56 +165,7 @@ const avatarInitials = computed(() => {
 
 .sidebar__profile {
   margin-top: auto;
-  padding: 12px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-  transition: background 180ms ease, transform 180ms ease, border-color 180ms ease;
-}
-
-.sidebar__profile:hover {
-  transform: translateY(-1px);
-  border-color: rgba(240, 190, 100, 0.24);
-  background: linear-gradient(180deg, rgba(240, 190, 100, 0.08), rgba(255, 255, 255, 0.04));
-}
-
-.sidebar__profile img {
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  object-fit: cover;
-}
-
-.sidebar__avatar-fallback {
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  color: #f4d8a7;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  background: linear-gradient(145deg, rgba(244, 201, 125, 0.25), rgba(95, 73, 44, 0.38));
-  border: 1px solid rgba(240, 190, 100, 0.34);
-}
-
-.sidebar__profile p {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.94);
-}
-
-.sidebar__profile span {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.66);
+  padding: 0;
 }
 
 .dashboard-main {
@@ -253,20 +175,6 @@ const avatarInitials = computed(() => {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-}
-
-.dashboard-main__topbar {
-  position: sticky;
-  top: 0;
-  z-index: 18;
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 16px 0;
-  pointer-events: none;
-}
-
-.dashboard-main__topbar :deep(.session-menu) {
-  pointer-events: auto;
 }
 
 .drawer-toggle,
@@ -351,9 +259,6 @@ const avatarInitials = computed(() => {
     margin-top: auto;
   }
 
-  .dashboard-main__topbar {
-    padding: 10px 76px 0 10px;
-  }
 }
 
 @media (min-width: 1024px) and (max-width: 1279px) {

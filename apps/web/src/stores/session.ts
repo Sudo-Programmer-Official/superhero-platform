@@ -6,6 +6,7 @@ export const sessionState = reactive({
   user: null as AuthSnapshot["user"],
   token: null as string | null,
   me: null as MePayload | null,
+  meLoaded: false,
   onboardingComplete: false,
   loading: false,
   ready: false,
@@ -16,6 +17,7 @@ export function clearSessionState(): void {
   sessionState.me = null;
   sessionState.user = null;
   sessionState.token = null;
+  sessionState.meLoaded = false;
   sessionState.onboardingComplete = false;
   sessionState.statusText = "";
 }
@@ -31,13 +33,16 @@ export function initSessionWatcher(): void {
     sessionState.user = next.user;
     sessionState.token = next.token;
     sessionState.me = null;
+    sessionState.meLoaded = false;
     sessionState.onboardingComplete = false;
 
     if (next.token) {
       try {
         sessionState.me = await fetchMe(next.token);
+        sessionState.meLoaded = true;
         sessionState.onboardingComplete = Boolean(sessionState.me?.practitioner_id);
       } catch (err) {
+        sessionState.meLoaded = false;
         sessionState.statusText = `Failed to load /me: ${String(err)}`;
       }
     }
@@ -49,9 +54,13 @@ export function initSessionWatcher(): void {
 export async function refreshMe(): Promise<void> {
   if (!sessionState.token) return;
   sessionState.loading = true;
-  sessionState.me = await fetchMe(sessionState.token);
-  sessionState.onboardingComplete = Boolean(sessionState.me?.practitioner_id);
-  sessionState.loading = false;
+  try {
+    sessionState.me = await fetchMe(sessionState.token);
+    sessionState.meLoaded = true;
+    sessionState.onboardingComplete = Boolean(sessionState.me?.practitioner_id);
+  } finally {
+    sessionState.loading = false;
+  }
 }
 
 export async function bootstrapMe(name?: string): Promise<void> {

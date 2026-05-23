@@ -16,14 +16,14 @@
     </div>
   </div>
 
-  <details v-else class="session-menu">
+  <details v-else class="session-menu" :class="{ 'is-compact': compact }">
     <summary class="session-trigger">
       <div class="avatar">{{ initials }}</div>
-      <div class="identity">
+      <div v-if="!compact" class="identity">
         <p>{{ displayName }}</p>
         <span>{{ roleLabel }}</span>
       </div>
-      <span v-if="isSuperAdmin" class="admin-badge">Admin Mode</span>
+      <span v-if="isSuperAdmin && !compact" class="admin-badge">Admin Mode</span>
     </summary>
     <div class="session-dropdown">
       <RouterLink v-for="item in menuItems" :key="item.label" class="menu-link" :to="item.to">{{ item.label }}</RouterLink>
@@ -42,7 +42,7 @@ import { resetDealStudio } from "../stores/dealStudio";
 import { clearSessionState, sessionState } from "../stores/session";
 import { clearToasts } from "../stores/toast";
 
-const props = withDefaults(defineProps<{ inline?: boolean }>(), { inline: false });
+const props = withDefaults(defineProps<{ inline?: boolean; compact?: boolean }>(), { inline: false, compact: false });
 defineEmits<{ navigate: [] }>();
 
 const router = useRouter();
@@ -72,6 +72,7 @@ const initials = computed(() => {
 const menuItems = computed(() => {
   if (isAdminRole.value) {
     return [
+      { label: "User Dashboard", to: { name: "dashboard" } },
       { label: "Admin Overview", to: { name: "admin-overview" } },
       { label: "Settings", to: { name: "admin-settings" } }
     ];
@@ -106,6 +107,19 @@ async function onLogout() {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
   padding: 8px 10px;
   cursor: pointer;
+}
+.session-menu.is-compact .session-trigger {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 12px;
+  justify-content: center;
+}
+.session-menu.is-compact .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 10px;
 }
 .session-trigger::-webkit-details-marker { display: none; }
 .identity p { margin: 0; font-size: 13px; font-weight: 600; }
