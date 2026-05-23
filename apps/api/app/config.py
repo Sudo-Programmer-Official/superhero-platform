@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     payments_test_mode: bool = False
     startup_validation_strict: bool = True
     startup_validation_check_s3: bool = False
+    activity_event_retention_days: int = 365
     log_level: str = "INFO"
     log_format: str = "json"
 

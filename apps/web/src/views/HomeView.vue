@@ -109,7 +109,8 @@ const activities = computed(() =>
 onMounted(async () => {
   if (!sessionState.token) return;
   try {
-    activityEvents.value = await listActivityEvents(sessionState.token);
+    const page = await listActivityEvents(sessionState.token);
+    activityEvents.value = page.items;
   } catch {
     activityEvents.value = [];
   }

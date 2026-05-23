@@ -1,16 +1,21 @@
 <template>
-  <section class="mx-auto grid w-full max-w-screen-xl gap-3 px-4 pb-24 pt-6 sm:px-6 lg:px-2">
-    <div class="flex items-center justify-between">
-      <h1 class="m-0 text-2xl font-bold tracking-[-0.02em]">Deals</h1>
+  <DashboardPageShell
+    eyebrow="Campaigns"
+    title="Deals"
+    subtitle="Operate all campaigns from one control surface with consistent filtering, sorting, and actions."
+  >
+    <template #actions>
       <AppButton tag="RouterLink" to="/dashboard/deals/create" variant="primary" size="form">Create Deal</AppButton>
-    </div>
+    </template>
+
     <DealsPanel :focus-deal-id="focusDealId" />
-  </section>
+  </DashboardPageShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import DashboardPageShell from "../design-system/patterns/DashboardPageShell.vue";
 import AppButton from "../design-system/primitives/AppButton.vue";
 import DealsPanel from "../modules/deals/DealsPanel.vue";
 

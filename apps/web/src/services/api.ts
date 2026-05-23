@@ -1,6 +1,6 @@
 import { fromDealApi, type Deal, type DealApiPayload } from "../domain/deal";
 import { fromBookingApi, type Booking, type BookingApiPayload } from "../domain/booking";
-import type { ActivityEvent } from "../domain/activity";
+import type { ActivityEventPage } from "../domain/activity";
 
 export type MePayload = {
   uid: string;
@@ -240,8 +240,13 @@ export async function listBookings(token: string): Promise<BookingPayload[]> {
   return json.map(fromBookingApi);
 }
 
-export async function listActivityEvents(token: string): Promise<ActivityEvent[]> {
-  const res = await fetch(`${API_BASE}/api/v1/activity-events`, { headers: headers(token) });
+export async function listActivityEvents(token: string, cursor?: string): Promise<ActivityEventPage> {
+  const params = new URLSearchParams();
+  params.set("limit", "40");
+  if (cursor) {
+    params.set("cursor", cursor);
+  }
+  const res = await fetch(`${API_BASE}/api/v1/activity-events?${params.toString()}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed activity events: ${res.status}`);
-  return (await res.json()) as ActivityEvent[];
+  return (await res.json()) as ActivityEventPage;
 }

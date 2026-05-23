@@ -15,11 +15,16 @@ class MeService:
     async def get_me(self, principal: AuthPrincipal) -> MeResponse:
         stmt = select(Practitioner).where(Practitioner.firebase_uid == principal.uid)
         practitioner = await self.session.scalar(stmt)
+        effective_role = principal.role
+        if practitioner and principal.role == "customer":
+            # Fresh Firebase accounts often carry "customer" claims until custom claims are refreshed.
+            # Normalize to practitioner when profile linkage already exists.
+            effective_role = "practitioner"
 
         return MeResponse(
             uid=principal.uid,
             email=principal.email,
-            role=principal.role,
+            role=effective_role,
             practitioner_id=practitioner.id if practitioner else None,
             practitioner_name=practitioner.name if practitioner else None,
             practitioner_slug=practitioner.slug if practitioner else None,

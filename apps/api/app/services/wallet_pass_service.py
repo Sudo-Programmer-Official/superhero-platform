@@ -6,12 +6,13 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.types import AuthPrincipal
+from app.domain_activity_events import ActivityEventType, EventScope, default_tenant
 from app.models import WalletPass
 from app.repositories.customer_repository import CustomerRepository
 from app.repositories.deal_card_repository import DealCardRepository
 from app.repositories.wallet_pass_repository import WalletPassRepository
 from app.schemas.wallet_pass import WalletPassIssueRequest
-from app.services.activity_event_service import ActivityEventService
+from app.services.activity_pipeline import emit_activity_event
 
 
 class WalletPassService:
@@ -20,7 +21,6 @@ class WalletPassService:
         self.repo = WalletPassRepository(session)
         self.deal_repo = DealCardRepository(session)
         self.customer_repo = CustomerRepository(session)
-        self.activity = ActivityEventService(session)
 
     async def list_wallet_passes(self) -> list[WalletPass]:
         return await self.repo.list_all()
@@ -45,12 +45,19 @@ class WalletPassService:
             wallet_type=payload.wallet_type,
         )
         created = await self.repo.create(model)
-        await self.activity.track(
+        deal_owner = await self.deal_repo.get(created.deal_id)
+        scope = EventScope(
+            tenant_id=default_tenant(),
+            practitioner_id=str(deal_owner.practitioner_id) if deal_owner else None,
             actor_id=principal.uid,
+        )
+        await emit_activity_event(
+            self.session,
+            scope=scope,
             entity_type="wallet_pass",
             entity_id=str(created.id),
-            event_type="wallet.generated",
-            metadata={"deal_id": str(created.deal_id), "customer_id": str(created.customer_id)},
+            event_type=ActivityEventType.WALLET_GENERATED,
+            metadata={"deal_id": str(created.deal_id), "customer_id": str(created.customer_id), "wallet_pass_id": str(created.id)},
         )
         await self.session.commit()
         return created
@@ -61,49 +68,60 @@ class WalletPassService:
 
         model = await self.repo.get_by_qr_code(qr_code)
         if not model:
-            await self.activity.track(
-                actor_id=principal.uid,
+            await emit_activity_event(
+                self.session,
+                scope=EventScope(tenant_id=default_tenant(), practitioner_id=None, actor_id=principal.uid),
                 entity_type="redemption",
                 entity_id=qr_code[:32],
-                event_type="redemption.failed",
+                event_type=ActivityEventType.REDEMPTION_FAILED,
                 metadata={"reason": "not_found"},
             )
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Wallet pass not found")
 
+        deal_owner = await self.deal_repo.get(model.deal_id)
+        scope = EventScope(
+            tenant_id=default_tenant(),
+            practitioner_id=str(deal_owner.practitioner_id) if deal_owner else None,
+            actor_id=principal.uid,
+        )
         if model.status == "redeemed":
-            await self.activity.track(
-                actor_id=principal.uid,
+            await emit_activity_event(
+                self.session,
+                scope=scope,
                 entity_type="redemption",
                 entity_id=str(model.id),
-                event_type="redemption.failed",
+                event_type=ActivityEventType.REDEMPTION_FAILED,
                 metadata={"reason": "already_redeemed"},
             )
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Wallet pass already redeemed")
         if model.status == "expired":
-            await self.activity.track(
-                actor_id=principal.uid,
+            await emit_activity_event(
+                self.session,
+                scope=scope,
                 entity_type="redemption",
                 entity_id=str(model.id),
-                event_type="redemption.failed",
+                event_type=ActivityEventType.REDEMPTION_FAILED,
                 metadata={"reason": "expired"},
             )
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Wallet pass expired")
 
         model.status = "redeemed"
         model.redeemed_at = datetime.now(timezone.utc)
-        await self.activity.track(
-            actor_id=principal.uid,
+        await emit_activity_event(
+            self.session,
+            scope=scope,
             entity_type="wallet_pass",
             entity_id=str(model.id),
-            event_type="wallet.redeemed",
-            metadata={"deal_id": str(model.deal_id), "customer_id": str(model.customer_id)},
+            event_type=ActivityEventType.WALLET_REDEEMED,
+            metadata={"deal_id": str(model.deal_id), "customer_id": str(model.customer_id), "wallet_pass_id": str(model.id)},
         )
-        await self.activity.track(
-            actor_id=principal.uid,
+        await emit_activity_event(
+            self.session,
+            scope=scope,
             entity_type="redemption",
             entity_id=str(model.id),
-            event_type="redemption.success",
-            metadata={"deal_id": str(model.deal_id), "customer_id": str(model.customer_id)},
+            event_type=ActivityEventType.REDEMPTION_SUCCESS,
+            metadata={"deal_id": str(model.deal_id), "customer_id": str(model.customer_id), "wallet_pass_id": str(model.id)},
         )
         await self.session.commit()
         await self.session.refresh(model)

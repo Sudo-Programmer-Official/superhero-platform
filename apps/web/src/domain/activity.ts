@@ -8,6 +8,11 @@ export type ActivityEvent = {
   created_at: string;
 };
 
+export type ActivityEventPage = {
+  items: ActivityEvent[];
+  next_cursor: string | null;
+};
+
 export function activityLabel(event: ActivityEvent): string {
   const m = event.metadata || {};
   if (event.event_type === "deal.created") return `Deal created: ${String(m.title || event.entity_id)}`;

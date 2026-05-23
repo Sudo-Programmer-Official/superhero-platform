@@ -15,6 +15,8 @@ class ActivityEvent(Base):
     __table_args__ = {"schema": settings.db_schema}
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, default="default")
+    practitioner_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     actor_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
     entity_id: Mapped[str] = mapped_column(String(128), nullable=False)

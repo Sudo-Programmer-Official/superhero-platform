@@ -6,7 +6,6 @@
           <p class="eyebrow">Control Center</p>
           <h2>Operate your campaigns</h2>
         </div>
-        <AppButton tag="RouterLink" to="/dashboard/deals/create" variant="primary" size="form">Create Deal</AppButton>
       </div>
 
       <div class="control-bar__row">
@@ -203,25 +202,25 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.deals-control-center { display: grid; gap: 12px; padding-bottom: 24px; }
-.control-bar { position: sticky; top: 76px; z-index: 5; backdrop-filter: blur(12px); }
-.control-bar__top { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
-.control-bar__top h2 { margin: 4px 0 0; font-size: 24px; }
-.control-bar__row { margin-top: 12px; display: grid; grid-template-columns: 1.3fr 200px 180px auto; gap: 8px; align-items: center; }
-.control-select { height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(12,18,30,.68); color: #dbe5f3; padding: 0 10px; }
-.view-toggle { display: flex; gap: 6px; }
-.toggle-btn { height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.03); color: rgba(255,255,255,.75); padding: 0 12px; }
+.deals-control-center { display: grid; gap: 20px; padding-bottom: 32px; }
+.control-bar { position: sticky; top: 24px; z-index: 5; backdrop-filter: blur(12px); }
+.control-bar__top { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.control-bar__top h2 { margin: 4px 0 0; font-size: 28px; line-height: 1.2; }
+.control-bar__row { margin-top: 16px; display: grid; grid-template-columns: minmax(260px, 1.4fr) 200px 200px auto; gap: 12px; align-items: stretch; }
+.control-select { height: 48px; border-radius: 14px; border: 1px solid rgba(255,255,255,.14); background: rgba(12,18,30,.68); color: #dbe5f3; padding: 0 12px; }
+.view-toggle { display: flex; gap: 8px; }
+.toggle-btn { height: 48px; border-radius: 14px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.03); color: rgba(255,255,255,.75); padding: 0 14px; }
 .toggle-btn.is-active { border-color: rgba(240,190,100,.55); background: rgba(240,190,100,.16); color: #f4d8a7; }
-.chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.03); color: rgba(255,255,255,.75); padding: 7px 11px; font-size: 12px; }
+.chips { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; }
+.chip { border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.03); color: rgba(255,255,255,.75); padding: 8px 12px; font-size: 12px; }
 .chip.is-active { border-color: rgba(240,190,100,.5); background: rgba(240,190,100,.15); color: #f4d8a7; }
-.skeleton-grid { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
+.skeleton-grid { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0,1fr)); }
 .skeleton-grid.is-list { grid-template-columns: 1fr; }
 .skeleton-card { height: 230px; border-radius: 20px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); }
 .shimmer { background-image: linear-gradient(100deg, rgba(255,255,255,.03) 20%, rgba(255,255,255,.1) 50%, rgba(255,255,255,.03) 80%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }
-.empty-state { text-align: center; padding: 28px; display: grid; gap: 10px; justify-items: center; }
-.empty-illustration { width: 72px; height: 72px; border-radius: 20px; border: 1px solid rgba(240,190,100,.38); background: rgba(240,190,100,.12); display: grid; place-items: center; color: #f4d8a7; font-size: 30px; }
-.deal-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.empty-state { text-align: center; padding: 32px 24px; display: grid; gap: 12px; justify-items: center; }
+.empty-illustration { width: 64px; height: 64px; border-radius: 18px; border: 1px solid rgba(240,190,100,.38); background: rgba(240,190,100,.12); display: grid; place-items: center; color: #f4d8a7; font-size: 28px; }
+.deal-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
 .deal-card { border-radius: 22px; border: 1px solid rgba(255,255,255,.09); overflow: hidden; background: linear-gradient(180deg, rgba(14,22,35,.82), rgba(10,16,30,.75)); box-shadow: 0 10px 28px rgba(0,0,0,.22); transition: transform 180ms ease, box-shadow 180ms ease; }
 .deal-card:hover { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(0,0,0,.3); }
 .deal-card.is-focused { box-shadow: 0 0 0 1px rgba(240,190,100,.45), 0 20px 40px rgba(240,190,100,.12); }
@@ -233,26 +232,26 @@ onMounted(async () => {
 .status.is-amber { border-color: rgba(240,190,100,.55); color: #f4d8a7; }
 .status.is-red { border-color: rgba(255,120,120,.55); color: #ffb5b5; }
 .status.is-slate { border-color: rgba(164,176,198,.45); color: #b8c2d6; }
-.deal-body { padding: 12px; display: grid; gap: 10px; }
+.deal-body { padding: 16px; display: grid; gap: 12px; }
 .deal-body h3 { margin: 0; font-size: 21px; line-height: 1.15; }
 .meta { margin: 0; color: rgba(255,255,255,.66); font-size: 13px; }
-.kpis { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
-.kpis div { border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); padding: 8px; }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.kpis div { border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); padding: 12px; }
 .kpis span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.56); }
 .kpis strong { font-size: 14px; color: #e8eef8; }
-.chips-inline { display: flex; gap: 8px; flex-wrap: wrap; }
+.chips-inline { display: flex; gap: 12px; flex-wrap: wrap; }
 .mini-chip { border-radius: 999px; padding: 5px 9px; font-size: 11px; border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.72); }
-.actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .list-wrap { overflow: auto; }
 .deal-table { width: 100%; border-collapse: collapse; min-width: 820px; }
-.deal-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.58); border-bottom: 1px solid rgba(255,255,255,.12); padding: 10px; }
-.deal-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.82); }
+.deal-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.58); border-bottom: 1px solid rgba(255,255,255,.12); padding: 12px; }
+.deal-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.82); }
 .deal-table tr.is-focused { background: rgba(240,190,100,.07); }
 .table-title { margin: 0; font-weight: 600; }
 .table-sub { margin: 3px 0 0; font-size: 12px; color: rgba(255,255,255,.55); }
 .table-actions { display: flex; gap: 8px; }
 .table-actions button { background: transparent; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; color: rgba(255,255,255,.78); padding: 4px 8px; font-size: 12px; }
-.pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.pagination { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .pagination p { margin: 0; color: rgba(255,255,255,.7); }
 @keyframes shimmer { to { background-position: -200% 0; } }
 @media (max-width: 1240px) {
@@ -260,11 +259,11 @@ onMounted(async () => {
 }
 @media (max-width: 980px) {
   .control-bar { position: static; }
-  .control-bar__row { grid-template-columns: 1fr 1fr; }
+  .control-bar__row { grid-template-columns: 1fr 1fr; gap: 12px; }
 }
 @media (max-width: 767px) {
   .deals-control-center { padding-bottom: 84px; }
-  .control-bar { position: sticky; top: 64px; }
+  .control-bar { position: sticky; top: 12px; }
   .control-bar__top { align-items: flex-start; flex-direction: column; }
   .control-bar__row { grid-template-columns: 1fr; }
   .deal-grid, .skeleton-grid { grid-template-columns: 1fr; }
