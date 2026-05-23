@@ -9,21 +9,50 @@ export type MePayload = {
   practitioner_id: string | null;
   practitioner_name: string | null;
   practitioner_slug: string | null;
+  stripe_account_id: string | null;
+  onboarding_state: "not_connected" | "onboarding" | "connected" | "restricted";
+  payouts_enabled: boolean;
+  charges_enabled: boolean;
 };
 
 export type PractitionerPublicPayload = {
   id: string;
   name: string;
   slug: string;
+  avatar_url: string | null;
+  cover_image_url: string | null;
+  logo_url: string | null;
   bio: string | null;
   profile_image: string | null;
+  category: string | null;
+  tagline: string | null;
+  specialties: string[];
+  booking_policies: string | null;
+  website: string | null;
+  support_email: string | null;
+  accent_color: string | null;
+  verification_state: string;
+  social_links: Record<string, string | null>;
   location: string | null;
 };
 
 export type PractitionerUpdatePayload = {
   name?: string;
+  slug?: string;
+  avatar_url?: string | null;
+  cover_image_url?: string | null;
+  logo_url?: string | null;
   bio?: string | null;
   profile_image?: string | null;
+  category?: string | null;
+  tagline?: string | null;
+  specialties?: string[];
+  booking_policies?: string | null;
+  website?: string | null;
+  support_email?: string | null;
+  accent_color?: string | null;
+  verification_state?: string | null;
+  social_links?: Record<string, string | null>;
   location?: string | null;
 };
 
@@ -49,13 +78,21 @@ export type BookingPayload = Booking;
 
 export type WalletPassPayload = {
   id: string;
+  booking_id: string | null;
   deal_id: string;
+  owner_id: string;
   customer_id: string;
   qr_code: string;
+  pass_status: string;
+  redemption_status: string;
+  expires_at: string | null;
   source_checkout_session_id: string | null;
   status: string;
   redeemed_at: string | null;
+  wallet_provider: string;
   wallet_type: string;
+  apple_wallet_url: string | null;
+  google_wallet_url: string | null;
   created_at: string;
 };
 
@@ -71,6 +108,45 @@ export type CheckoutSessionCreatePayload = {
 export type CheckoutSessionCreateResponse = {
   checkout_session_id: string;
   checkout_url: string;
+};
+
+export type AdminPractitionerRow = {
+  id: string;
+  name: string;
+  slug: string;
+  subscription_status: "trial" | "active" | "grace" | "churn_risk" | string;
+  payout_status: "connected" | "restricted" | "pending" | string;
+  stripe_state: "connected" | "onboarding" | "missing" | string;
+  verification_state: "verified" | "pending" | "flagged" | string;
+  health: "healthy" | "watch" | "critical" | string;
+  is_public: boolean;
+  created_at: string;
+};
+
+export type AdminDealRow = {
+  id: string;
+  title: string;
+  slug: string;
+  practitioner_id: string;
+  practitioner_name: string;
+  status: "draft" | "published" | "expired" | "archived" | string;
+  moderation_state: "clean" | "flagged" | string;
+  revenue: string | number;
+  bookings_count: number;
+  start_time: string;
+  created_at: string;
+};
+
+export type AdminPayoutRow = {
+  id: string;
+  practitioner_id: string;
+  creator: string;
+  amount: string | number;
+  status: "pending" | "processing" | "paid" | "failed" | string;
+  transfer_state: "queued" | "in_transit" | "completed" | "error" | string;
+  transaction_count: number;
+  processing_date: string | null;
+  payout_date: string | null;
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -249,4 +325,75 @@ export async function listActivityEvents(token: string, cursor?: string): Promis
   const res = await fetch(`${API_BASE}/api/v1/activity-events?${params.toString()}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed activity events: ${res.status}`);
   return (await res.json()) as ActivityEventPage;
+}
+
+export async function listAdminPractitioners(token: string, query?: string): Promise<AdminPractitionerRow[]> {
+  const params = new URLSearchParams();
+  if (query?.trim()) params.set("query", query.trim());
+  const q = params.toString();
+  const res = await fetch(`${API_BASE}/api/v1/admin/practitioners${q ? `?${q}` : ""}`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed admin practitioners: ${res.status}`);
+  return (await res.json()) as AdminPractitionerRow[];
+}
+
+export async function adminPractitionerAction(
+  token: string,
+  practitionerId: string,
+  action: "impersonate" | "suspend" | "activate" | "grant_credits" | "reset_onboarding" | "resend_verification"
+): Promise<AdminPractitionerRow> {
+  const res = await fetch(`${API_BASE}/api/v1/admin/practitioners/${practitionerId}/actions`, {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify({ action })
+  });
+  if (!res.ok) throw new Error(`Failed practitioner action: ${res.status}`);
+  return (await res.json()) as AdminPractitionerRow;
+}
+
+export async function listAdminDeals(token: string, query?: string, dealStatus?: string): Promise<AdminDealRow[]> {
+  const params = new URLSearchParams();
+  if (query?.trim()) params.set("query", query.trim());
+  if (dealStatus?.trim()) params.set("status", dealStatus.trim());
+  const q = params.toString();
+  const res = await fetch(`${API_BASE}/api/v1/admin/deals${q ? `?${q}` : ""}`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed admin deals: ${res.status}`);
+  return (await res.json()) as AdminDealRow[];
+}
+
+export async function adminDealAction(
+  token: string,
+  dealId: string,
+  action: "archive" | "unpublish" | "feature" | "moderate"
+): Promise<AdminDealRow> {
+  const res = await fetch(`${API_BASE}/api/v1/admin/deals/${dealId}/actions`, {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify({ action })
+  });
+  if (!res.ok) throw new Error(`Failed deal action: ${res.status}`);
+  return (await res.json()) as AdminDealRow;
+}
+
+export async function listAdminPayouts(token: string, query?: string, payoutStatus?: string): Promise<AdminPayoutRow[]> {
+  const params = new URLSearchParams();
+  if (query?.trim()) params.set("query", query.trim());
+  if (payoutStatus?.trim()) params.set("status", payoutStatus.trim());
+  const q = params.toString();
+  const res = await fetch(`${API_BASE}/api/v1/admin/payouts${q ? `?${q}` : ""}`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed admin payouts: ${res.status}`);
+  return (await res.json()) as AdminPayoutRow[];
+}
+
+export async function adminPayoutAction(
+  token: string,
+  practitionerId: string,
+  action: "mark_paid" | "retry"
+): Promise<AdminPayoutRow> {
+  const res = await fetch(`${API_BASE}/api/v1/admin/payouts/${practitionerId}/actions`, {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify({ action })
+  });
+  if (!res.ok) throw new Error(`Failed payout action: ${res.status}`);
+  return (await res.json()) as AdminPayoutRow;
 }

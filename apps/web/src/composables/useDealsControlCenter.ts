@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import { getDealStatus, type DealStatus } from "../domain/deal";
 import { archiveDeal, duplicateDeal, listDeals, type DealCardPayload, updateDealStatus } from "../services/api";
 import { sessionState } from "../stores/session";
+import { showToast } from "../stores/toast";
 
 export type DealStatusFilter = "all" | "published" | "draft" | "sold_out" | "archived" | "expired";
 export type DealSort = "newest" | "oldest" | "revenue_desc" | "conversion_desc" | "bookings_desc";
@@ -43,6 +44,7 @@ function decorateDeal(deal: DealCardPayload): DecoratedDeal {
 export function useDealsControlCenter(focusDealId?: string) {
   const deals = ref<DecoratedDeal[]>([]);
   const loading = ref(true);
+  const error = ref("");
   const search = ref("");
   const filter = ref<DealStatusFilter>("all");
   const sort = ref<DealSort>("newest");
@@ -122,11 +124,13 @@ export function useDealsControlCenter(focusDealId?: string) {
   async function loadDeals() {
     if (!sessionState.token) return;
     loading.value = true;
+    error.value = "";
     try {
       const payload = await listDeals(sessionState.token);
       deals.value = payload.map(decorateDeal);
     } catch (err) {
-      sessionState.statusText = `Failed to load deals: ${String(err)}`;
+      error.value = `Failed to load deals: ${String(err)}`;
+      showToast(error.value, "error");
     } finally {
       loading.value = false;
     }
@@ -144,10 +148,10 @@ export function useDealsControlCenter(focusDealId?: string) {
     try {
       const updated = await updateDealStatus(sessionState.token, dealId, shouldPublish ? "published" : "draft");
       deals.value[idx] = decorateDeal(updated);
-      sessionState.statusText = shouldPublish ? "Deal published" : "Deal unpublished";
+      showToast(shouldPublish ? "Deal published" : "Deal unpublished", "success");
     } catch (err) {
       deals.value[idx] = prev;
-      sessionState.statusText = `Status update failed: ${String(err)}`;
+      showToast(`Status update failed: ${String(err)}`, "error");
     }
   }
 
@@ -161,10 +165,10 @@ export function useDealsControlCenter(focusDealId?: string) {
     try {
       const updated = await updateDealStatus(sessionState.token, dealId, "expired");
       deals.value[idx] = decorateDeal(updated);
-      sessionState.statusText = "Deal archived to expired";
+      showToast("Deal archived to expired", "success");
     } catch (err) {
       deals.value[idx] = prev;
-      sessionState.statusText = `Archive failed: ${String(err)}`;
+      showToast(`Archive failed: ${String(err)}`, "error");
     }
   }
 
@@ -173,9 +177,9 @@ export function useDealsControlCenter(focusDealId?: string) {
     try {
       const created = await duplicateDeal(sessionState.token, dealId);
       deals.value.unshift(decorateDeal(created));
-      sessionState.statusText = "Draft duplicated";
+      showToast("Draft duplicated", "success");
     } catch (err) {
-      sessionState.statusText = `Duplicate failed: ${String(err)}`;
+      showToast(`Duplicate failed: ${String(err)}`, "error");
     }
   }
 
@@ -187,16 +191,20 @@ export function useDealsControlCenter(focusDealId?: string) {
       if (idx >= 0) {
         deals.value[idx] = decorateDeal(archived);
       }
-      sessionState.statusText = "Deal archived";
+      showToast("Deal archived", "success");
     } catch (err) {
-      sessionState.statusText = `Archive failed: ${String(err)}`;
+      showToast(`Archive failed: ${String(err)}`, "error");
     }
   }
 
   async function copyShareLink(sharePath: string | null) {
     if (!sharePath) return;
-    await navigator.clipboard.writeText(`${window.location.origin}${sharePath}`);
-    sessionState.statusText = "Share link copied";
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${sharePath}`);
+      showToast("Share link copied", "success");
+    } catch {
+      showToast("Could not copy share link", "error");
+    }
   }
 
   function viewPublicPage(sharePath: string | null) {
@@ -251,6 +259,7 @@ export function useDealsControlCenter(focusDealId?: string) {
     setSort,
     setViewMode,
     setPublished,
+    error,
     sort,
     statusCounts,
     totalPages,

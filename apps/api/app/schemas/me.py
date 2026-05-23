@@ -11,6 +11,10 @@ class MeResponse(BaseModel):
     practitioner_id: UUID | None = None
     practitioner_name: str | None = None
     practitioner_slug: str | None = None
+    stripe_account_id: str | None = None
+    onboarding_state: str = "not_connected"
+    payouts_enabled: bool = False
+    charges_enabled: bool = False
 
 
 class BootstrapPractitionerRequest(BaseModel):

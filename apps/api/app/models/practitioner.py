@@ -32,3 +32,48 @@ class Practitioner(Base):
     )
 
     deals = relationship("DealCard", back_populates="practitioner", cascade="all, delete-orphan")
+
+    @property
+    def avatar_url(self) -> str | None:
+        return self.profile_image
+
+    @property
+    def cover_image_url(self) -> str | None:
+        return (self.branding or {}).get("cover_image_url")
+
+    @property
+    def logo_url(self) -> str | None:
+        return (self.branding or {}).get("logo_url")
+
+    @property
+    def category(self) -> str | None:
+        return (self.branding or {}).get("category")
+
+    @property
+    def tagline(self) -> str | None:
+        return (self.branding or {}).get("tagline")
+
+    @property
+    def specialties(self) -> list[str]:
+        raw = (self.branding or {}).get("specialties")
+        return raw if isinstance(raw, list) else []
+
+    @property
+    def booking_policies(self) -> str | None:
+        return (self.branding or {}).get("booking_policies")
+
+    @property
+    def website(self) -> str | None:
+        return (self.social_links or {}).get("website")
+
+    @property
+    def support_email(self) -> str | None:
+        return (self.branding or {}).get("support_email")
+
+    @property
+    def accent_color(self) -> str | None:
+        return (self.branding or {}).get("accent_color")
+
+    @property
+    def verification_state(self) -> str:
+        return (self.branding or {}).get("verification_state") or "unverified"

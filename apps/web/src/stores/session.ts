@@ -12,6 +12,14 @@ export const sessionState = reactive({
   statusText: ""
 });
 
+export function clearSessionState(): void {
+  sessionState.me = null;
+  sessionState.user = null;
+  sessionState.token = null;
+  sessionState.onboardingComplete = false;
+  sessionState.statusText = "";
+}
+
 let started = false;
 
 export function initSessionWatcher(): void {

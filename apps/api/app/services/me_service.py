@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.types import AuthPrincipal
+from app.domain.permissions import BOOTSTRAP_ROLES, normalize_effective_role
 from app.models import Practitioner
 from app.schemas.me import BootstrapPractitionerRequest, BootstrapPractitionerResponse, MeResponse
 from app.utils.slug import slugify
@@ -15,11 +16,7 @@ class MeService:
     async def get_me(self, principal: AuthPrincipal) -> MeResponse:
         stmt = select(Practitioner).where(Practitioner.firebase_uid == principal.uid)
         practitioner = await self.session.scalar(stmt)
-        effective_role = principal.role
-        if practitioner and principal.role == "customer":
-            # Fresh Firebase accounts often carry "customer" claims until custom claims are refreshed.
-            # Normalize to practitioner when profile linkage already exists.
-            effective_role = "practitioner"
+        effective_role = normalize_effective_role(principal.role, bool(practitioner))
 
         return MeResponse(
             uid=principal.uid,
@@ -28,13 +25,23 @@ class MeService:
             practitioner_id=practitioner.id if practitioner else None,
             practitioner_name=practitioner.name if practitioner else None,
             practitioner_slug=practitioner.slug if practitioner else None,
+            stripe_account_id=practitioner.stripe_account_id if practitioner else None,
+            onboarding_state=(
+                "connected"
+                if practitioner and practitioner.stripe_account_id and practitioner.stripe_onboarding_complete
+                else "onboarding"
+                if practitioner and practitioner.stripe_account_id
+                else "not_connected"
+            ),
+            payouts_enabled=bool(practitioner and practitioner.stripe_onboarding_complete),
+            charges_enabled=bool(practitioner and practitioner.stripe_onboarding_complete),
         )
 
     async def bootstrap_practitioner(
         self, principal: AuthPrincipal, payload: BootstrapPractitionerRequest
     ) -> BootstrapPractitionerResponse:
         # New Firebase users typically start as "customer"; allow them to bootstrap their own practitioner profile.
-        if principal.role not in {"customer", "practitioner", "admin", "super_admin"}:
+        if principal.role not in BOOTSTRAP_ROLES:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role cannot bootstrap practitioner")
 
         existing = await self.session.scalar(select(Practitioner).where(Practitioner.firebase_uid == principal.uid))

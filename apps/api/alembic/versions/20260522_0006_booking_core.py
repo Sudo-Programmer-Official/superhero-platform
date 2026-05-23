@@ -22,55 +22,65 @@ SCHEMA = os.getenv("DB_SCHEMA", "superhero_platform")
 
 
 def upgrade() -> None:
-    op.create_table(
-        "bookings",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("booking_number", sa.String(length=64), nullable=False),
-        sa.Column("deal_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("practitioner_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("customer_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("customer_name", sa.String(length=160), nullable=True),
-        sa.Column("customer_email", sa.String(length=255), nullable=False),
-        sa.Column("customer_phone", sa.String(length=64), nullable=True),
-        sa.Column("avatar_url", sa.String(length=500), nullable=True),
-        sa.Column("quantity", sa.Integer(), nullable=False, server_default=sa.text("1")),
-        sa.Column("subtotal", sa.Numeric(10, 2), nullable=False),
-        sa.Column("fee_amount", sa.Numeric(10, 2), nullable=False, server_default=sa.text("0.00")),
-        sa.Column("total_amount", sa.Numeric(10, 2), nullable=False),
-        sa.Column("currency", sa.String(length=8), nullable=False, server_default=sa.text("'USD'")),
-        sa.Column("payment_status", sa.String(length=32), nullable=False, server_default=sa.text("'pending'")),
-        sa.Column("redemption_status", sa.String(length=32), nullable=False, server_default=sa.text("'active'")),
-        sa.Column("wallet_pass_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("qr_code", sa.String(length=500), nullable=True),
-        sa.Column("booked_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("redeemed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("refunded_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.ForeignKeyConstraint(["deal_id"], [f"{SCHEMA}.deal_cards.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["practitioner_id"], [f"{SCHEMA}.practitioners.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["customer_id"], [f"{SCHEMA}.customers.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["wallet_pass_id"], [f"{SCHEMA}.wallet_passes.id"], ondelete="SET NULL"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("booking_number", name="uq_bookings_booking_number"),
-        schema=SCHEMA,
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
 
-    op.add_column(
-        "wallet_passes",
-        sa.Column("booking_id", postgresql.UUID(as_uuid=True), nullable=True),
-        schema=SCHEMA,
-    )
-    op.create_foreign_key(
-        "fk_wallet_passes_booking_id",
-        "wallet_passes",
-        "bookings",
-        ["booking_id"],
-        ["id"],
-        source_schema=SCHEMA,
-        referent_schema=SCHEMA,
-        ondelete="SET NULL",
-    )
+    existing_tables = set(inspector.get_table_names(schema=SCHEMA))
+    if "bookings" not in existing_tables:
+        op.create_table(
+            "bookings",
+            sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
+            sa.Column("booking_number", sa.String(length=64), nullable=False),
+            sa.Column("deal_id", postgresql.UUID(as_uuid=True), nullable=False),
+            sa.Column("practitioner_id", postgresql.UUID(as_uuid=True), nullable=False),
+            sa.Column("customer_id", postgresql.UUID(as_uuid=True), nullable=False),
+            sa.Column("customer_name", sa.String(length=160), nullable=True),
+            sa.Column("customer_email", sa.String(length=255), nullable=False),
+            sa.Column("customer_phone", sa.String(length=64), nullable=True),
+            sa.Column("avatar_url", sa.String(length=500), nullable=True),
+            sa.Column("quantity", sa.Integer(), nullable=False, server_default=sa.text("1")),
+            sa.Column("subtotal", sa.Numeric(10, 2), nullable=False),
+            sa.Column("fee_amount", sa.Numeric(10, 2), nullable=False, server_default=sa.text("0.00")),
+            sa.Column("total_amount", sa.Numeric(10, 2), nullable=False),
+            sa.Column("currency", sa.String(length=8), nullable=False, server_default=sa.text("'USD'")),
+            sa.Column("payment_status", sa.String(length=32), nullable=False, server_default=sa.text("'pending'")),
+            sa.Column("redemption_status", sa.String(length=32), nullable=False, server_default=sa.text("'active'")),
+            sa.Column("wallet_pass_id", postgresql.UUID(as_uuid=True), nullable=True),
+            sa.Column("qr_code", sa.String(length=500), nullable=True),
+            sa.Column("booked_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+            sa.Column("redeemed_at", sa.DateTime(timezone=True), nullable=True),
+            sa.Column("refunded_at", sa.DateTime(timezone=True), nullable=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+            sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+            sa.ForeignKeyConstraint(["deal_id"], [f"{SCHEMA}.deal_cards.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["practitioner_id"], [f"{SCHEMA}.practitioners.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["customer_id"], [f"{SCHEMA}.customers.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["wallet_pass_id"], [f"{SCHEMA}.wallet_passes.id"], ondelete="SET NULL"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("booking_number", name="uq_bookings_booking_number"),
+            schema=SCHEMA,
+        )
+
+    wallet_pass_columns = {column["name"] for column in inspector.get_columns("wallet_passes", schema=SCHEMA)}
+    if "booking_id" not in wallet_pass_columns:
+        op.add_column(
+            "wallet_passes",
+            sa.Column("booking_id", postgresql.UUID(as_uuid=True), nullable=True),
+            schema=SCHEMA,
+        )
+
+    wallet_pass_fks = {fk["name"] for fk in inspector.get_foreign_keys("wallet_passes", schema=SCHEMA)}
+    if "fk_wallet_passes_booking_id" not in wallet_pass_fks:
+        op.create_foreign_key(
+            "fk_wallet_passes_booking_id",
+            "wallet_passes",
+            "bookings",
+            ["booking_id"],
+            ["id"],
+            source_schema=SCHEMA,
+            referent_schema=SCHEMA,
+            ondelete="SET NULL",
+        )
 
 
 def downgrade() -> None:

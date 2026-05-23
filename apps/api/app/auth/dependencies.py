@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db import get_db_session
+from app.domain.permissions import PRACTITIONER_ACCESS_ROLES, normalize_effective_role
 from app.repositories.practitioner_repository import PractitionerRepository
 
 from .firebase import FirebaseTokenVerifier
@@ -58,9 +59,7 @@ async def get_access_context(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cross-tenant access denied")
 
     practitioner = await PractitionerRepository(session).get_by_firebase_uid(principal.uid)
-    role = principal.role
-    if role == "customer" and practitioner:
-        role = "practitioner"
+    role = normalize_effective_role(principal.role, bool(practitioner))
 
     return AccessContext(
         principal=AuthPrincipal(uid=principal.uid, email=principal.email, role=role),
@@ -72,7 +71,7 @@ async def get_access_context(
 
 def require_practitioner():
     async def _guard(ctx: AccessContext = Depends(get_access_context)) -> AuthPrincipal:
-        if ctx.role not in {"super_admin", "admin", "practitioner"}:
+        if ctx.role not in PRACTITIONER_ACCESS_ROLES:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Practitioner access required")
         if ctx.role == "practitioner" and not ctx.practitioner_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Practitioner profile not linked")

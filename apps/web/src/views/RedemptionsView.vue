@@ -1,16 +1,15 @@
 <template>
-  <section class="redemptions">
-    <header class="redemptions__head">
-      <div>
-        <p class="eyebrow">Redemption Operations</p>
-        <h1>Scan and Redeem</h1>
-        <p>Point camera at QR code or Apple Wallet pass.</p>
-      </div>
+  <DashboardPageShell
+    eyebrow="Redemption Operations"
+    title="Scan and Redeem"
+    subtitle="Point camera at QR code or Apple Wallet pass."
+  >
+    <template #actions>
       <span class="state-pill" :class="`is-${scannerState}`">{{ stateLabel }}</span>
-    </header>
+    </template>
 
     <div class="redemptions__grid">
-      <AppCard class="scanner-card">
+      <PaddedSectionCard class="scanner-card">
         <h2>Scanner</h2>
 
         <div v-if="scannerState === 'idle'" class="scanner-state">
@@ -94,9 +93,9 @@
           </div>
           <AppButton variant="secondary" size="form" @click="reset">Retry</AppButton>
         </div>
-      </AppCard>
+      </PaddedSectionCard>
 
-      <AppCard class="manual-card">
+      <PaddedSectionCard class="manual-card">
         <h2>Manual fallback</h2>
         <p class="muted">If camera access is denied, enter redemption code manually.</p>
 
@@ -110,9 +109,9 @@
         <div class="permission-note">
           <p><strong>Camera permission:</strong> {{ cameraPermission }}</p>
         </div>
-      </AppCard>
+      </PaddedSectionCard>
 
-      <AppCard class="history-card">
+      <PaddedSectionCard class="history-card">
         <div class="history-head">
           <h2>Recent redemptions</h2>
           <span>{{ history.length }}</span>
@@ -131,22 +130,21 @@
             </div>
           </article>
         </div>
-      </AppCard>
+      </PaddedSectionCard>
     </div>
 
-    <transition name="toast-fade">
-      <div v-if="toast" class="toast">{{ toast }}</div>
-    </transition>
-  </section>
+  </DashboardPageShell>
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from "vue";
 import { useRoute } from "vue-router";
+import DashboardPageShell from "../design-system/patterns/DashboardPageShell.vue";
+import PaddedSectionCard from "../design-system/patterns/PaddedSectionCard.vue";
 import AppButton from "../design-system/primitives/AppButton.vue";
-import AppCard from "../design-system/primitives/AppCard.vue";
 import AppInput from "../design-system/primitives/AppInput.vue";
 import { useRedemptionFlow } from "../composables/useRedemptionFlow";
+import { showToast } from "../stores/toast";
 
 const route = useRoute();
 const {
@@ -164,11 +162,9 @@ const {
   scannerState,
   scannerError,
   setVideoElement,
-  setToast,
   simulateScan,
   stateLabel,
-  teardownScanner,
-  toast
+  teardownScanner
 } = useRedemptionFlow();
 const scannerVideo = useTemplateRef<HTMLVideoElement>("scannerVideo");
 
@@ -181,7 +177,7 @@ onMounted(() => {
   const prefillCode = String(route.query.code || "").trim();
   if (prefillCode) {
     manualCode.value = prefillCode;
-    setToast("Pass code prefilled. Tap Redeem manually to continue.");
+    showToast("Pass code prefilled. Tap Redeem manually to continue.", "info");
   }
 });
 
@@ -195,11 +191,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.redemptions { padding: 18px; display: grid; gap: 12px; }
-.redemptions__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.redemptions__head h1 { margin: 6px 0 0; font-size: clamp(30px, 4vw, 46px); }
-.redemptions__head p { margin: 8px 0 0; color: rgba(255,255,255,.66); }
-.state-pill { border-radius: 999px; border: 1px solid rgba(255,255,255,.2); padding: 7px 12px; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: rgba(255,255,255,.82); }
+.state-pill { border-radius: 999px; border: 1px solid rgba(255,255,255,.2); padding: 7px 12px; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 600; color: rgba(255,255,255,.82); }
 .state-pill.is-success { border-color: rgba(82,213,139,.55); color: #52d58b; }
 .state-pill.is-invalid, .state-pill.is-offline { border-color: rgba(255,120,120,.6); color: #ff9a9a; }
 .state-pill.is-already_redeemed, .state-pill.is-expired { border-color: rgba(240,190,100,.5); color: #f4d8a7; }
@@ -209,13 +201,13 @@ onBeforeUnmount(() => {
   grid-template-areas:
     "scanner manual"
     "scanner history";
-  gap: 12px;
+  gap: 20px;
 }
 .scanner-card { grid-area: scanner; }
 .manual-card { grid-area: manual; }
 .history-card { grid-area: history; }
 .scanner-state { display: grid; gap: 10px; margin-top: 8px; }
-.helper { margin: 0; color: rgba(255,255,255,.72); }
+.helper { margin: 0; color: rgba(255,255,255,.72); font-size: 14px; line-height: 1.45; }
 .helper--warning { color: #f4d8a7; }
 .camera-placeholder {
   position: relative;
@@ -266,7 +258,7 @@ onBeforeUnmount(() => {
 .corner--br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 12px 0; }
 .scanner-actions { display: flex; gap: 8px; }
 .result-card { border-radius: 14px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); padding: 12px; }
-.result-card h3 { margin: 0; }
+.result-card h3 { margin: 0; font-size: 24px; line-height: 1.15; letter-spacing: -0.01em; }
 .result-card p { margin: 6px 0 0; color: rgba(255,255,255,.72); }
 .result-card--success { border-color: rgba(82,213,139,.55); background: rgba(24,58,45,.35); box-shadow: 0 0 20px rgba(82,213,139,.15); }
 .result-card--warning { border-color: rgba(240,190,100,.42); background: rgba(76,56,30,.25); }
@@ -278,7 +270,7 @@ onBeforeUnmount(() => {
 .permission-note { margin-top: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); padding: 10px; }
 .permission-note p { margin: 0; font-size: 13px; color: rgba(255,255,255,.72); }
 .history-head { display: flex; justify-content: space-between; align-items: center; }
-.history-head h2 { margin: 0; }
+.history-head h2 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -0.01em; }
 .history-head span { border-radius: 999px; border: 1px solid rgba(255,255,255,.16); padding: 6px 10px; font-size: 12px; color: rgba(255,255,255,.75); }
 .history-list { margin-top: 10px; display: grid; gap: 8px; }
 .history-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); padding: 10px; }
@@ -287,14 +279,10 @@ onBeforeUnmount(() => {
 .event { margin: 2px 0 0; color: rgba(255,255,255,.62); font-size: 13px; }
 .meta { text-align: right; }
 .meta p { margin: 5px 0 0; color: rgba(255,255,255,.56); font-size: 12px; }
-.chip { border-radius: 999px; border: 1px solid rgba(255,255,255,.15); padding: 4px 9px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.82); }
+.chip { border-radius: 999px; border: 1px solid rgba(255,255,255,.15); padding: 4px 9px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.82); }
 .chip--success { border-color: rgba(82,213,139,.5); color: #52d58b; }
 .chip--already_redeemed { border-color: rgba(240,190,100,.48); color: #f4d8a7; }
 .chip--expired, .chip--invalid { border-color: rgba(255,120,120,.52); color: #ffaeae; }
-.toast { position: fixed; right: 18px; bottom: 18px; z-index: 40; border-radius: 12px; border: 1px solid rgba(240,190,100,.32); background: rgba(10,16,29,.92); color: #f4d8a7; padding: 10px 12px; }
-.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
-.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(8px); }
-
 @keyframes scan {
   0% { top: 8px; }
   50% { top: calc(100% - 10px); }
@@ -312,8 +300,6 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 767px) {
-  .redemptions { padding: 12px; }
-  .redemptions__head { flex-direction: column; }
   .scanner-actions { flex-direction: column; }
   .camera-placeholder { height: 280px; }
   .camera-overlay { width: 190px; height: 190px; }

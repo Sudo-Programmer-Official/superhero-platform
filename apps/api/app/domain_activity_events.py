@@ -12,7 +12,9 @@ class ActivityEventType:
     BOOKING_REFUNDED = "booking.refunded"
 
     WALLET_GENERATED = "wallet.generated"
+    WALLET_VIEWED = "wallet.viewed"
     WALLET_REDEEMED = "wallet.redeemed"
+    WALLET_FAILED = "wallet.failed"
 
     REDEMPTION_SUCCESS = "redemption.success"
     REDEMPTION_FAILED = "redemption.failed"

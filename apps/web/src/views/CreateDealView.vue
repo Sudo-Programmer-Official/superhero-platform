@@ -6,7 +6,7 @@
   >
     <div class="studio-layout">
       <section class="studio-main">
-        <AppCard class="studio-card">
+        <PaddedSectionCard class="studio-card">
           <div class="section-head">
             <h2>Basic Info</h2>
             <p>Define the core identity and messaging for this deal.</p>
@@ -18,9 +18,9 @@
             <div class="field"><label>Cover image URL</label><AppInput v-model="studio.form.coverImage" placeholder="https://..." /></div>
           </div>
           <div class="field"><label>Description</label><textarea v-model="studio.form.description" rows="4" class="field-textarea" placeholder="Describe the experience"></textarea></div>
-        </AppCard>
+        </PaddedSectionCard>
 
-        <AppCard class="studio-card">
+        <PaddedSectionCard class="studio-card">
           <div class="section-head">
             <h2>Schedule</h2>
             <p>Set timing details with clear timezone context.</p>
@@ -35,9 +35,9 @@
               </select>
             </div>
           </div>
-        </AppCard>
+        </PaddedSectionCard>
 
-        <AppCard class="studio-card">
+        <PaddedSectionCard class="studio-card">
           <div class="section-head">
             <h2>Capacity & Pricing</h2>
             <p>Balance inventory and pricing to optimize conversion.</p>
@@ -46,9 +46,9 @@
             <div class="field"><label>Seats</label><AppInput v-model="studio.form.seats" type="number" placeholder="20" /></div>
             <div class="field"><label>Pricing (USD)</label><AppInput v-model="studio.form.price" type="number" placeholder="45.00" /></div>
           </div>
-        </AppCard>
+        </PaddedSectionCard>
 
-        <AppCard class="studio-card">
+        <PaddedSectionCard class="studio-card">
           <div class="section-head">
             <h2>Redemption</h2>
             <p>Choose your on-site validation flow.</p>
@@ -59,9 +59,9 @@
               <select v-model="studio.form.redemptionType" class="field-select"><option value="qr">QR</option><option value="nfc">NFC</option></select>
             </div>
           </div>
-        </AppCard>
+        </PaddedSectionCard>
 
-        <AppCard class="studio-card">
+        <PaddedSectionCard class="studio-card">
           <div class="section-head">
             <h2>Visibility</h2>
             <p>Control how and when this campaign appears publicly.</p>
@@ -72,9 +72,9 @@
               <select v-model="studio.form.visibility" class="field-select"><option value="public">Public</option><option value="private">Private</option></select>
             </div>
           </div>
-        </AppCard>
+        </PaddedSectionCard>
 
-        <AppCard class="studio-card">
+        <PaddedSectionCard class="studio-card">
           <div class="section-head">
             <h2>Preview</h2>
             <p>Live preview of the public card and wallet pass output.</p>
@@ -96,11 +96,11 @@
               <div class="wallet-qr">▦</div>
             </article>
           </div>
-        </AppCard>
+        </PaddedSectionCard>
       </section>
 
       <aside class="studio-side">
-        <AppCard class="workflow-card" muted>
+        <PaddedSectionCard class="workflow-card" muted>
           <h3>Workflow State</h3>
           <p class="workflow-sub">Operational readiness</p>
           <div class="progress-wrap">
@@ -129,26 +129,24 @@
             </div>
           </div>
           <AppButton variant="ghost" @click="resetDealStudio">Reset flow</AppButton>
-        </AppCard>
+        </PaddedSectionCard>
       </aside>
     </div>
 
-    <transition name="toast-fade">
-      <div v-if="studio.toast" class="toast">{{ studio.toast }}</div>
-    </transition>
   </DashboardPageShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import AppButton from "../design-system/primitives/AppButton.vue";
-import AppCard from "../design-system/primitives/AppCard.vue";
 import AppInput from "../design-system/primitives/AppInput.vue";
 import DashboardPageShell from "../design-system/patterns/DashboardPageShell.vue";
+import PaddedSectionCard from "../design-system/patterns/PaddedSectionCard.vue";
 import { formatLocalDateTime, formatTimezone } from "../domain/deal";
 import { createDeal, updateDealStatus } from "../services/api";
-import { dealStudioState as studio, resetDealStudio, setDealStudioToast } from "../stores/dealStudio";
+import { dealStudioState as studio, resetDealStudio } from "../stores/dealStudio";
 import { sessionState } from "../stores/session";
+import { showToast } from "../stores/toast";
 
 const formattedStart = computed(() => {
   if (!studio.form.startsAt) return "Date pending";
@@ -210,10 +208,10 @@ async function onCreateDraft() {
     });
     studio.lastDraftId = draft.id;
     studio.status = "idle";
-    setDealStudioToast("Draft created");
+    showToast("Draft created", "success");
   } catch (err) {
     studio.status = "idle";
-    setDealStudioToast(`Draft failed: ${String(err)}`);
+    showToast(`Draft failed: ${String(err)}`, "error");
   }
 }
 
@@ -226,17 +224,21 @@ async function onPublish() {
     studio.status = "done";
     studio.shareUrl = `${window.location.origin}${published.share_link || `/openmat/${sessionState.me?.practitioner_slug}/${published.slug}`}`;
     studio.qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(studio.shareUrl)}`;
-    setDealStudioToast("Deal published and share ready");
+    showToast("Deal published and share ready", "success");
   } catch (err) {
     studio.status = "idle";
-    setDealStudioToast(`Publish failed: ${String(err)}`);
+    showToast(`Publish failed: ${String(err)}`, "error");
   }
 }
 
 async function copyShare() {
   if (!studio.shareUrl) return;
-  await navigator.clipboard.writeText(studio.shareUrl);
-  setDealStudioToast("Link copied");
+  try {
+    await navigator.clipboard.writeText(studio.shareUrl);
+    showToast("Link copied", "success");
+  } catch {
+    showToast("Could not copy link", "error");
+  }
 }
 
 function openShare() {
@@ -283,9 +285,6 @@ function openShare() {
 .publish-actions { display: grid; gap: 12px; }
 .share-grid { display: grid; gap: 12px; }
 .share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.toast { position: fixed; right: 20px; bottom: 20px; z-index: 70; border-radius: 12px; border: 1px solid rgba(240,190,100,.3); background: rgba(10,16,28,.92); color: #f4d8a7; padding: 10px 14px; }
-.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
-.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(6px); }
 @media (max-width: 1279px) {
   .studio-layout { grid-template-columns: 1fr; }
   .workflow-card { position: static; }

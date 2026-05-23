@@ -20,10 +20,10 @@ router = APIRouter(prefix="/wallet-passes", tags=["wallet-passes"])
 
 @router.get("", response_model=list[WalletPassRead])
 async def list_wallet_passes(
-    _: AccessContext = Depends(require_tenant_access("super_admin", "admin", "practitioner")),
+    access: AccessContext = Depends(require_tenant_access("super_admin", "admin", "practitioner")),
     session: AsyncSession = Depends(get_db_session),
 ):
-    return await WalletPassService(session).list_wallet_passes()
+    return await WalletPassService(session).list_wallet_passes(access)
 
 
 @router.post("/issue", response_model=WalletPassRead)

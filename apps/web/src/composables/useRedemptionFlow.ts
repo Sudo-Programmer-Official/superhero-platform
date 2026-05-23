@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 import { redeemWalletPass } from "../services/api";
 import { sessionState } from "../stores/session";
+import { showToast } from "../stores/toast";
 
 export type ScannerState =
   | "idle"
@@ -60,7 +61,6 @@ export function useRedemptionFlow() {
   const scannerState = ref<ScannerState>("idle");
   const cameraPermission = ref<PermissionState>("not_requested");
   const manualCode = ref("");
-  const toast = ref("");
   const result = ref<RedemptionResult | null>(null);
   const history = ref<RedemptionHistoryItem[]>([]);
   const isSubmitting = computed(() => scannerState.value === "validating");
@@ -73,15 +73,6 @@ export function useRedemptionFlow() {
   const canSubmitManual = computed(() => manualCode.value.trim().length > 0 && !isSubmitting.value);
 
   const stateLabel = computed(() => scannerState.value.replace(/_/g, " "));
-
-  function setToast(message: string) {
-    toast.value = message;
-    window.setTimeout(() => {
-      if (toast.value === message) {
-        toast.value = "";
-      }
-    }, 2200);
-  }
 
   function stopScanLoop() {
     if (scanRafId) {
@@ -197,7 +188,7 @@ export function useRedemptionFlow() {
     } catch {
       cameraPermission.value = "denied";
       scannerState.value = "idle";
-      setToast("Camera denied. Use manual fallback.");
+      showToast("Camera denied. Use manual fallback.", "warning");
     }
   }
 
@@ -213,7 +204,7 @@ export function useRedemptionFlow() {
     if (!code) return;
     if (!sessionState.token) {
       scannerState.value = "offline";
-      setToast("Authentication session expired.");
+      showToast("Authentication session expired.", "error");
       pushHistory(code, "invalid");
       return;
     }
@@ -233,7 +224,7 @@ export function useRedemptionFlow() {
         code
       };
       scannerState.value = "success";
-      setToast("Pass redeemed successfully.");
+      showToast("Pass redeemed successfully.", "success");
       pushHistory(code, "success");
     } catch (err) {
       const message = String(err).toLowerCase();
@@ -283,10 +274,8 @@ export function useRedemptionFlow() {
     scannerState,
     scannerError,
     setVideoElement,
-    setToast,
     simulateScan,
     stateLabel,
-    teardownScanner,
-    toast
+    teardownScanner
   };
 }

@@ -120,9 +120,6 @@
         </AppCard>
       </div>
 
-      <transition name="toast-fade">
-        <div v-if="statusText" class="toast">{{ statusText }}</div>
-      </transition>
     </template>
   </section>
 </template>
@@ -134,12 +131,12 @@ import AppButton from "../design-system/primitives/AppButton.vue";
 import AppCard from "../design-system/primitives/AppCard.vue";
 import { calculateCheckoutTotals, formatLocalDateTime, formatMoney, formatTimezone, getStatusLabel } from "../domain/deal";
 import { createCheckoutSession, fetchPublicDeal, type DealCardPayload } from "../services/api";
+import { showToast } from "../stores/toast";
 
 type CheckoutState = "idle" | "processing" | "success" | "failed";
 
 const route = useRoute();
 const deal = ref<DealCardPayload | null>(null);
-const statusText = ref("");
 const errorText = ref("");
 const isLoading = ref(true);
 const checkoutState = ref<CheckoutState>("idle");
@@ -290,11 +287,11 @@ async function onCheckout() {
     });
 
     checkoutState.value = "success";
-    statusText.value = "Redirecting to payment...";
+    showToast("Redirecting to payment...", "loading", 1800);
     window.location.href = res.checkout_url;
   } catch (err) {
     checkoutState.value = "failed";
-    statusText.value = `Checkout failed: ${String(err)}`;
+    showToast(`Checkout failed: ${String(err)}`, "error");
     checkoutNotice.value = "Checkout request failed. Please try again.";
     checkoutNoticeTone.value = "error";
   }
@@ -367,9 +364,6 @@ h2 { margin: 0 0 8px; font-size: 24px; }
 .status-chip.is-success { border-color: rgba(82,213,139,.58); color: #52d58b; }
 .status-chip.is-failed { border-color: rgba(255,110,110,.55); color: #ffb2b2; }
 .status-copy { color: rgba(255,255,255,.62); font-size: 12px; text-align: right; }
-.toast { position: fixed; right: 18px; bottom: 18px; border-radius: 12px; border: 1px solid rgba(240,190,100,.32); background: rgba(10,16,29,.92); color: #f4d8a7; padding: 10px 12px; z-index: 40; }
-.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
-.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateY(8px); }
 @media (max-width: 1120px) { .content-grid { grid-template-columns: 1fr; } }
 @media (max-width: 767px) {
   .public-deal { padding: 10px; }

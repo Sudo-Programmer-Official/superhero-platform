@@ -17,8 +17,8 @@
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'wallet-passes' }" to="/dashboard/wallet-passes">Wallet Passes</RouterLink>
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'redemptions' }" to="/dashboard/redemptions">Redemptions</RouterLink>
           <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'profile' }" to="/dashboard/profile">Profile</RouterLink>
-          <button class="sidebar__item" type="button">Payouts</button>
-          <button class="sidebar__item" type="button">Settings</button>
+          <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'payouts' }" to="/dashboard/payouts">Payouts</RouterLink>
+          <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'settings' }" to="/dashboard/settings">Settings</RouterLink>
         </nav>
 
         <RouterLink class="sidebar__profile" to="/dashboard/profile">
@@ -37,6 +37,9 @@
       </aside>
 
       <main class="dashboard-main">
+        <div class="dashboard-main__topbar">
+          <SessionMenu />
+        </div>
         <RouterView />
       </main>
     </div>
@@ -56,23 +59,25 @@
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'wallet-passes' }" to="/dashboard/wallet-passes" @click="isDrawerOpen = false">Wallet Passes</RouterLink>
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'redemptions' }" to="/dashboard/redemptions" @click="isDrawerOpen = false">Redemptions</RouterLink>
         <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'profile' }" to="/dashboard/profile" @click="isDrawerOpen = false">Profile</RouterLink>
+        <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'payouts' }" to="/dashboard/payouts" @click="isDrawerOpen = false">Payouts</RouterLink>
+        <RouterLink class="sidebar__item" :class="{ 'is-active': route.name === 'settings' }" to="/dashboard/settings" @click="isDrawerOpen = false">Settings</RouterLink>
       </nav>
 
-      <AppButton v-if="sessionState.user" variant="secondary" size="md" context="form" @click="onLogout">Sign out</AppButton>
+      <div class="drawer-footer">
+        <SessionMenu inline @navigate="isDrawerOpen = false" />
+      </div>
     </aside>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import AppButton from "../design-system/primitives/AppButton.vue";
+import { useRoute } from "vue-router";
+import SessionMenu from "../components/SessionMenu.vue";
 import GradientOrb from "../design-system/primitives/GradientOrb.vue";
-import { logout } from "../firebase/auth";
 import { sessionState } from "../stores/session";
 
 const route = useRoute();
-const router = useRouter();
 const isDrawerOpen = ref(false);
 const avatarErrored = ref(false);
 
@@ -89,38 +94,31 @@ const avatarInitials = computed(() => {
     .slice(0, 2);
   return parts.map((part) => part[0]?.toUpperCase() || "").join("") || "DU";
 });
-
-async function onLogout() {
-  await logout();
-  sessionState.me = null;
-  sessionState.user = null;
-  sessionState.token = null;
-  isDrawerOpen.value = false;
-  await router.push("/signin");
-}
 </script>
 
 <style scoped>
 .app-shell {
   position: relative;
-  min-height: 100dvh;
+  height: 100dvh;
   overflow-x: clip;
+  overflow-y: hidden;
   width: 100%;
   padding: 0;
 }
 
 .dashboard-layout {
   width: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 0;
   padding: 0;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .sidebar {
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: 24px 16px 18px;
@@ -132,6 +130,7 @@ async function onLogout() {
   background: linear-gradient(180deg, rgba(8, 12, 28, 0.92), rgba(5, 10, 24, 0.86));
   backdrop-filter: blur(18px);
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.24);
+  overflow-y: auto;
 }
 
 .sidebar__brand {
@@ -249,8 +248,25 @@ async function onLogout() {
 
 .dashboard-main {
   min-width: 0;
-  min-height: 100dvh;
+  height: 100dvh;
   padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.dashboard-main__topbar {
+  position: sticky;
+  top: 0;
+  z-index: 18;
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 16px 0;
+  pointer-events: none;
+}
+
+.dashboard-main__topbar :deep(.session-menu) {
+  pointer-events: auto;
 }
 
 .drawer-toggle,
@@ -266,7 +282,7 @@ async function onLogout() {
 
   .dashboard-layout {
     grid-template-columns: 1fr;
-    min-height: 100dvh;
+    height: 100dvh;
     padding: 0;
   }
 
@@ -329,6 +345,14 @@ async function onLogout() {
   .drawer.is-open {
     transform: translateX(0);
     opacity: 1;
+  }
+
+  .drawer-footer {
+    margin-top: auto;
+  }
+
+  .dashboard-main__topbar {
+    padding: 10px 76px 0 10px;
   }
 }
 

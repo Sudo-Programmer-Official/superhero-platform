@@ -1,4 +1,11 @@
 :root {
+  /* base scale */
+  --space-12: 0.75rem;
+  --space-16: 1rem;
+  --space-20: 1.25rem;
+  --space-24: 1.5rem;
+  --space-32: 2rem;
+
   --space-2xs: 0.25rem;
   --space-xs: 0.375rem;
   --space-sm: 0.625rem;
@@ -11,4 +18,31 @@
   --container-max: 1280px;
   --container-pad-mobile: 1rem;
   --container-pad-desktop: 1.5rem;
+
+  /* app layout rhythm */
+  --space-page-x: var(--space-24);
+  --space-page-y: var(--space-20);
+  --space-page-bottom: var(--space-32);
+  --space-section: var(--space-24);
+  --space-card: var(--space-20);
+  --space-card-header-top: 1.875rem;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --space-page-x: var(--space-20);
+    --space-page-y: var(--space-20);
+    --space-page-bottom: var(--space-24);
+    --space-section: var(--space-20);
+    --space-card: var(--space-16);
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --space-page-x: var(--space-16);
+    --space-page-y: var(--space-16);
+    --space-page-bottom: var(--space-24);
+    --space-section: var(--space-20);
+  }
 }

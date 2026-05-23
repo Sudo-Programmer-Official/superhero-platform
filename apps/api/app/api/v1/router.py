@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from .routes.admin_ops import router as admin_ops_router
 from .routes.activity_events import router as activity_events_router
 from .routes.bookings import router as bookings_router
 from .routes.deal_cards import router as deal_cards_router
@@ -22,3 +23,4 @@ api_router.include_router(storage_router)
 api_router.include_router(wallet_passes_router)
 api_router.include_router(stripe_connect_router)
 api_router.include_router(super_admin_router)
+api_router.include_router(admin_ops_router)

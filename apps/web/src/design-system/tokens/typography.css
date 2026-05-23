@@ -6,6 +6,12 @@
   --text-body-lg: clamp(16px, 1.2vw, 18px);
   --text-body: 16px;
   --text-caption: 12px;
+
+  --type-page-title: clamp(30px, 3vw, 40px);
+  --type-section-title: clamp(22px, 2.1vw, 28px);
+  --type-metric-value: clamp(24px, 2.4vw, 34px);
+  --type-body-muted: 16px;
+  --type-label-small: 12px;
 }
 
 @media (min-width: 768px) and (max-width: 1199px) {

@@ -1,23 +1,22 @@
 <template>
-  <section class="bookings">
-    <header class="bookings__head">
-      <div>
-        <p class="eyebrow">Bookings</p>
-        <h1>Transaction Ledger</h1>
-        <p>Canonical booking records for checkout, wallet, redemption, and payouts.</p>
-      </div>
+  <DashboardPageShell
+    eyebrow="Bookings"
+    title="Transaction Ledger"
+    subtitle="Canonical booking records for checkout, wallet, redemption, and payouts."
+  >
+    <template #actions>
       <AppButton variant="secondary" size="form" :disabled="loading" @click="load">Refresh</AppButton>
-    </header>
+    </template>
 
-    <AppCard v-if="loading" muted>Loading bookings…</AppCard>
-    <AppCard v-else-if="errorText" class="error-card">{{ errorText }}</AppCard>
+    <PaddedSectionCard v-if="loading" muted>Loading bookings…</PaddedSectionCard>
+    <PaddedSectionCard v-else-if="errorText" class="error-card">{{ errorText }}</PaddedSectionCard>
 
-    <AppCard v-else-if="bookings.length === 0" muted>
+    <PaddedSectionCard v-else-if="bookings.length === 0" muted class="empty-card">
       <h3>No bookings yet</h3>
       <p>Bookings appear automatically after checkout is paid and wallet pass is issued.</p>
-    </AppCard>
+    </PaddedSectionCard>
 
-    <AppCard v-else class="table-wrap">
+    <PaddedSectionCard v-else class="table-wrap">
       <table class="booking-table">
         <thead>
           <tr>
@@ -48,14 +47,15 @@
           </tr>
         </tbody>
       </table>
-    </AppCard>
-  </section>
+    </PaddedSectionCard>
+  </DashboardPageShell>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import AppButton from "../design-system/primitives/AppButton.vue";
-import AppCard from "../design-system/primitives/AppCard.vue";
+import DashboardPageShell from "../design-system/patterns/DashboardPageShell.vue";
+import PaddedSectionCard from "../design-system/patterns/PaddedSectionCard.vue";
 import {
   formatBookingDate,
   formatBookingMoney,
@@ -93,23 +93,22 @@ onMounted(load);
 </script>
 
 <style scoped>
-.bookings { padding: 18px; display: grid; gap: 12px; }
-.bookings__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.bookings__head h1 { margin: 6px 0 0; font-size: clamp(30px, 4vw, 46px); }
-.bookings__head p { margin: 8px 0 0; color: rgba(255,255,255,.66); }
+.empty-card { display: grid; gap: 12px; }
+.empty-card h3 { margin: 0; font-size: 34px; line-height: 1.1; letter-spacing: -0.02em; }
+.empty-card p { margin: 0; color: rgba(255,255,255,.68); font-size: 16px; line-height: 1.45; max-width: 62ch; }
 .error-card { border: 1px solid rgba(255,100,100,.55); color: #ffd0d0; }
 .table-wrap { overflow: auto; }
 .booking-table { width: 100%; min-width: 920px; border-collapse: collapse; }
-.booking-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.58); border-bottom: 1px solid rgba(255,255,255,.12); padding: 10px; }
-.booking-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.86); }
+.booking-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.58); border-bottom: 1px solid rgba(255,255,255,.12); padding: 12px; }
+.booking-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.07); color: rgba(255,255,255,.86); }
 .mono { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace; }
-.sub { margin: 4px 0 0; color: rgba(255,255,255,.55); font-size: 12px; }
-.chip { border-radius: 999px; border: 1px solid rgba(255,255,255,.16); padding: 4px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.sub { margin: 4px 0 0; color: rgba(255,255,255,.55); font-size: 12px; line-height: 1.35; }
+.chip { border-radius: 999px; border: 1px solid rgba(255,255,255,.16); padding: 4px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
 .chip--green { color: #52d58b; border-color: rgba(82,213,139,.55); }
 .chip--amber { color: #f4d8a7; border-color: rgba(240,190,100,.55); }
 .chip--red { color: #ffb5b5; border-color: rgba(255,120,120,.55); }
 @media (max-width: 767px) {
-  .bookings { padding: 12px; }
-  .bookings__head { flex-direction: column; }
+  .empty-card h3 { font-size: 30px; }
+  .empty-card p { font-size: 16px; }
 }
 </style>

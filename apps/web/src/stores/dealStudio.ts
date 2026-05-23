@@ -23,7 +23,6 @@ export const dealStudioState = reactive({
   lastDraftId: "",
   shareUrl: "",
   qrUrl: "",
-  toast: "",
   form: {
     title: "",
     description: "",
@@ -48,20 +47,12 @@ export function prevDealStudioStep() {
   if (dealStudioState.step > 1) dealStudioState.step -= 1;
 }
 
-export function setDealStudioToast(message: string) {
-  dealStudioState.toast = message;
-  setTimeout(() => {
-    if (dealStudioState.toast === message) dealStudioState.toast = "";
-  }, 2200);
-}
-
 export function resetDealStudio() {
   dealStudioState.step = 1;
   dealStudioState.status = "idle";
   dealStudioState.lastDraftId = "";
   dealStudioState.shareUrl = "";
   dealStudioState.qrUrl = "";
-  dealStudioState.toast = "";
   dealStudioState.form = {
     title: "",
     description: "",

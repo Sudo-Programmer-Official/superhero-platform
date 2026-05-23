@@ -1,11 +1,13 @@
 import uuid
+import logging
 from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.types import AuthPrincipal
+from app.auth.types import AccessContext, AuthPrincipal
 from app.domain_activity_events import ActivityEventType, EventScope, default_tenant
 from app.models import WalletPass
 from app.repositories.customer_repository import CustomerRepository
@@ -13,6 +15,8 @@ from app.repositories.deal_card_repository import DealCardRepository
 from app.repositories.wallet_pass_repository import WalletPassRepository
 from app.schemas.wallet_pass import WalletPassIssueRequest
 from app.services.activity_pipeline import emit_activity_event
+
+logger = logging.getLogger("app.wallet_pass")
 
 
 class WalletPassService:
@@ -22,8 +26,63 @@ class WalletPassService:
         self.deal_repo = DealCardRepository(session)
         self.customer_repo = CustomerRepository(session)
 
-    async def list_wallet_passes(self) -> list[WalletPass]:
-        return await self.repo.list_all()
+    @staticmethod
+    def _compute_redemption_status(model: WalletPass) -> str:
+        if model.status == "redeemed":
+            return "redeemed"
+        if model.status in {"expired", "revoked"}:
+            return model.status
+        return "active"
+
+    def _to_wallet_payload(self, model: WalletPass) -> dict:
+        provider = (model.wallet_type or "internal").strip().lower()
+        return {
+            "id": model.id,
+            "booking_id": model.booking_id,
+            "deal_id": model.deal_id,
+            "owner_id": model.customer_id,
+            "customer_id": model.customer_id,
+            "qr_code": model.qr_code,
+            "pass_status": model.status,
+            "status": model.status,
+            "redemption_status": self._compute_redemption_status(model),
+            "expires_at": model.expires_at,
+            "redeemed_at": model.redeemed_at,
+            "source_checkout_session_id": model.source_checkout_session_id,
+            "wallet_provider": provider,
+            "wallet_type": provider,
+            "apple_wallet_url": model.apple_wallet_url,
+            "google_wallet_url": model.google_wallet_url,
+            "created_at": model.created_at,
+        }
+
+    async def list_wallet_passes(self, access: AccessContext) -> list[dict]:
+        try:
+            if access.role == "practitioner":
+                if not access.practitioner_id:
+                    return []
+                rows = await self.repo.list_by_practitioner(access.practitioner_id)
+            else:
+                rows = await self.repo.list_all()
+
+            await emit_activity_event(
+                self.session,
+                scope=EventScope(
+                    tenant_id=access.tenant_id,
+                    practitioner_id=str(access.practitioner_id) if access.practitioner_id else None,
+                    actor_id=access.principal.uid,
+                ),
+                entity_type="wallet_pass",
+                entity_id="collection",
+                event_type=ActivityEventType.WALLET_VIEWED,
+                metadata={"count": len(rows)},
+            )
+            await self.session.commit()
+            return [self._to_wallet_payload(row) for row in rows]
+        except SQLAlchemyError as exc:
+            await self.session.rollback()
+            logger.exception("wallet.list.failed", extra={"event": "wallet.list.failed"})
+            return []
 
     async def issue_wallet_pass(self, payload: WalletPassIssueRequest, principal: AuthPrincipal) -> WalletPass:
         if principal.role not in {"super_admin", "admin", "practitioner"}:

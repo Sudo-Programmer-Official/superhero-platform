@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import WalletPass
+from app.models import DealCard, WalletPass
 
 
 class WalletPassRepository:
@@ -12,6 +12,16 @@ class WalletPassRepository:
 
     async def list_all(self) -> list[WalletPass]:
         stmt: Select[tuple[WalletPass]] = select(WalletPass).order_by(WalletPass.created_at.desc())
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def list_by_practitioner(self, practitioner_id: UUID) -> list[WalletPass]:
+        stmt: Select[tuple[WalletPass]] = (
+            select(WalletPass)
+            .join(DealCard, DealCard.id == WalletPass.deal_id)
+            .where(DealCard.practitioner_id == practitioner_id)
+            .order_by(WalletPass.created_at.desc())
+        )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
