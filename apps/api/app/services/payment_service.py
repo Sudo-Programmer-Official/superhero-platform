@@ -6,6 +6,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import stripe
 from fastapi import HTTPException, status
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -61,101 +62,111 @@ class PaymentService:
         customer_id: uuid.UUID,
         quantity: int = 1,
     ) -> None:
-        existing = await self.wallet_repo.get_by_checkout_session_id(checkout_session_id)
-        if existing:
-            return
+        try:
+            existing = await self.wallet_repo.get_by_checkout_session_id(checkout_session_id)
+            if existing:
+                return
 
-        deal = await self.deal_repo.get(deal_id)
-        if not deal or deal.remaining_slots <= 0:
-            return
+            deal = await self.deal_repo.get(deal_id)
+            if not deal or deal.remaining_slots <= 0:
+                return
 
-        practitioner = await self.practitioner_repo.get(deal.practitioner_id)
-        customer = await self.session.get(Customer, customer_id)
-        if not practitioner or not customer:
-            return
+            practitioner = await self.practitioner_repo.get(deal.practitioner_id)
+            customer = await self.session.get(Customer, customer_id)
+            if not practitioner or not customer:
+                return
 
-        purchased_qty = max(1, quantity)
-        if deal.remaining_slots < purchased_qty:
-            purchased_qty = deal.remaining_slots
-        deal.remaining_slots -= purchased_qty
+            purchased_qty = max(1, quantity)
+            if deal.remaining_slots < purchased_qty:
+                purchased_qty = deal.remaining_slots
+            deal.remaining_slots -= purchased_qty
 
-        unit_price = deal.price
-        subtotal = unit_price * purchased_qty
-        fee_amount = Decimal("0.00")
-        total_amount = subtotal + fee_amount
+            unit_price = deal.price
+            subtotal = unit_price * purchased_qty
+            fee_amount = Decimal("0.00")
+            total_amount = subtotal + fee_amount
 
-        booking_number = f"BKG-{uuid.uuid4().hex[:10].upper()}"
-        booking = Booking(
-            booking_number=booking_number,
-            deal_id=deal.id,
-            practitioner_id=practitioner.id,
-            customer_id=customer.id,
-            customer_name=customer.name,
-            customer_email=customer.email,
-            customer_phone=None,
-            avatar_url=None,
-            quantity=purchased_qty,
-            subtotal=subtotal,
-            fee_amount=fee_amount,
-            total_amount=total_amount,
-            currency="USD",
-            payment_status="paid",
-            redemption_status="active",
-            wallet_pass_id=None,
-            qr_code=None,
-        )
-        self.session.add(booking)
-        await self.session.flush()
-        scope = EventScope(
-            tenant_id=default_tenant(),
-            practitioner_id=str(practitioner.id),
-            actor_id=str(customer.id),
-        )
-        await emit_activity_event(
-            self.session,
-            scope=scope,
-            entity_type="booking",
-            entity_id=str(booking.id),
-            event_type=ActivityEventType.BOOKING_CREATED,
-            metadata={
-                "booking_id": str(booking.id),
-                "booking_number": booking.booking_number,
-                "attendee_name": customer.name,
-                "quantity": purchased_qty,
-                "amount": str(total_amount),
-            },
-        )
+            booking_number = f"BKG-{uuid.uuid4().hex[:10].upper()}"
+            booking = Booking(
+                booking_number=booking_number,
+                deal_id=deal.id,
+                practitioner_id=practitioner.id,
+                customer_id=customer.id,
+                customer_name=customer.name,
+                customer_email=customer.email,
+                customer_phone=None,
+                avatar_url=None,
+                quantity=purchased_qty,
+                subtotal=subtotal,
+                fee_amount=fee_amount,
+                total_amount=total_amount,
+                currency="USD",
+                payment_status="paid",
+                redemption_status="active",
+                wallet_pass_id=None,
+                qr_code=None,
+            )
+            self.session.add(booking)
+            await self.session.flush()
+            scope = EventScope(
+                tenant_id=default_tenant(),
+                practitioner_id=str(practitioner.id),
+                actor_id=str(customer.id),
+            )
+            await emit_activity_event(
+                self.session,
+                scope=scope,
+                entity_type="booking",
+                entity_id=str(booking.id),
+                event_type=ActivityEventType.BOOKING_CREATED,
+                metadata={
+                    "booking_id": str(booking.id),
+                    "booking_number": booking.booking_number,
+                    "attendee_name": customer.name,
+                    "quantity": purchased_qty,
+                    "amount": str(total_amount),
+                },
+            )
 
-        wallet_pass = WalletPass(
-            deal_id=deal_id,
-            customer_id=customer_id,
-            qr_code=uuid.uuid4().hex,
-            status="issued",
-            wallet_type="apple",
-            source_checkout_session_id=checkout_session_id,
-            booking_id=booking.id,
-        )
-        self.session.add(wallet_pass)
-        await self.session.flush()
-        await emit_activity_event(
-            self.session,
-            scope=scope,
-            entity_type="wallet_pass",
-            entity_id=str(wallet_pass.id),
-            event_type=ActivityEventType.WALLET_GENERATED,
-            metadata={"deal_id": str(deal.id), "booking_id": str(booking.id), "wallet_pass_id": str(wallet_pass.id)},
-        )
-        booking.wallet_pass_id = wallet_pass.id
-        booking.qr_code = wallet_pass.qr_code
-        await emit_activity_event(
-            self.session,
-            scope=scope,
-            entity_type="booking",
-            entity_id=str(booking.id),
-            event_type=ActivityEventType.BOOKING_PAID,
-            metadata={"booking_id": str(booking.id), "amount": str(booking.total_amount), "currency": booking.currency},
-        )
-        await self.session.commit()
+            wallet_pass = WalletPass(
+                deal_id=deal_id,
+                customer_id=customer_id,
+                qr_code=uuid.uuid4().hex,
+                status="issued",
+                wallet_type="apple",
+                source_checkout_session_id=checkout_session_id,
+                booking_id=booking.id,
+            )
+            self.session.add(wallet_pass)
+            await self.session.flush()
+            await emit_activity_event(
+                self.session,
+                scope=scope,
+                entity_type="wallet_pass",
+                entity_id=str(wallet_pass.id),
+                event_type=ActivityEventType.WALLET_GENERATED,
+                metadata={"deal_id": str(deal.id), "booking_id": str(booking.id), "wallet_pass_id": str(wallet_pass.id)},
+            )
+            booking.wallet_pass_id = wallet_pass.id
+            booking.qr_code = wallet_pass.qr_code
+            await emit_activity_event(
+                self.session,
+                scope=scope,
+                entity_type="booking",
+                entity_id=str(booking.id),
+                event_type=ActivityEventType.BOOKING_PAID,
+                metadata={"booking_id": str(booking.id), "amount": str(booking.total_amount), "currency": booking.currency},
+            )
+            await self.session.commit()
+        except ProgrammingError as exc:
+            message = str(exc)
+            if "does not exist" in message and "wallet_passes.booking_id" in message:
+                await self.session.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Database schema is out of date. Run API migrations (missing wallet_passes.booking_id).",
+                ) from exc
+            raise
 
         # Email should never block checkout finalization.
         MailService.send_booking_confirmation(
