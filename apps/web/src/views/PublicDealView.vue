@@ -386,7 +386,7 @@ const CheckoutPanelContent = defineComponent({
   name: "CheckoutPanelContent",
   setup() {
     return () =>
-      h("div", { class: "checkout-shell" }, [
+      h("div", { class: ["checkout-shell", isMobileViewport.value ? "is-mobile" : ""] }, [
         h("div", { class: "checkout-price" }, [
           h("p", { class: "checkout-price-value" }, formatMoney(deal.value?.base_price, deal.value?.currency)),
           h("p", { class: "checkout-price-sub" }, "per attendee")
@@ -443,28 +443,32 @@ const CheckoutPanelContent = defineComponent({
           ])
         ]),
         formError.value ? h("p", { class: "form-error" }, formError.value) : null,
-        h("div", { class: "summary" }, [
-          h("div", [h("span", "Price"), h("strong", formatMoney(deal.value?.base_price, deal.value?.currency))]),
-          h("div", [h("span", "Quantity"), h("strong", String(quantity.value))]),
-          h("div", [h("span", "Subtotal"), h("strong", subtotal.value)]),
-          h("div", [h("span", "Platform fee"), h("strong", fee.value)]),
-          h("div", [h("span", "Estimated tax"), h("strong", tax.value)]),
-          h("div", { class: "total" }, [h("span", "Total"), h("strong", total.value)])
+        h("div", { class: "summary-wrap" }, [
+          h("div", { class: "summary" }, [
+            h("div", [h("span", "Price"), h("strong", formatMoney(deal.value?.base_price, deal.value?.currency))]),
+            h("div", [h("span", "Quantity"), h("strong", String(quantity.value))]),
+            h("div", [h("span", "Subtotal"), h("strong", subtotal.value)]),
+            h("div", [h("span", "Platform fee"), h("strong", fee.value)]),
+            h("div", [h("span", "Estimated tax"), h("strong", tax.value)]),
+            h("div", { class: "total" }, [h("span", "Total"), h("strong", total.value)])
+          ])
         ]),
-        h(
-          AppButton,
-          {
-            class: "checkout-btn",
-            variant: "primary",
-            size: "form",
-            disabled: deal.value?.status !== "published" || checkoutState.value === "processing",
-            onClick: onCheckout
-          },
-          { default: () => checkoutLabel.value }
-        ),
-        h("div", { class: "status-row" }, [
-          h("span", { class: ["status-chip", `is-${checkoutState.value}`] }, checkoutStateLabel.value),
-          h("span", { class: "status-copy" }, checkoutStatusCopy.value)
+        h("div", { class: "action-wrap" }, [
+          h(
+            AppButton,
+            {
+              class: "checkout-btn",
+              variant: "primary",
+              size: "form",
+              disabled: deal.value?.status !== "published" || checkoutState.value === "processing",
+              onClick: onCheckout
+            },
+            { default: () => checkoutLabel.value }
+          ),
+          h("div", { class: "status-row" }, [
+            h("span", { class: ["status-chip", `is-${checkoutState.value}`] }, checkoutStateLabel.value),
+            h("span", { class: "status-copy" }, checkoutStatusCopy.value)
+          ])
         ])
       ]);
   }
@@ -499,10 +503,15 @@ onBeforeUnmount(() => {
   --text-muted: rgba(230, 238, 249, 0.72);
   width: 100%;
   min-height: 100dvh;
-  padding: 18px;
+  padding: 0;
   display: grid;
-  gap: 14px;
+  gap: 18px;
   background: radial-gradient(900px 420px at 15% -10%, rgba(38, 91, 169, 0.18), transparent 60%), linear-gradient(180deg, var(--bg-1), var(--bg-0));
+}
+.public-deal > * {
+  width: min(100%, 1440px);
+  margin-inline: auto;
+  padding-inline: clamp(16px, 2.1vw, 32px);
 }
 .hero-card,
 .content-stack > :deep(*),
@@ -532,11 +541,11 @@ onBeforeUnmount(() => {
 .price-block { display: grid; justify-items: end; gap: 4px; }
 .price { margin: 0; padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(240,190,100,.45); background: rgba(240,190,100,.14); color: #f4d8a7; font-size: 34px; font-weight: 700; white-space: nowrap; }
 .price-caption { margin: 0; font-size: 12px; color: rgba(255,255,255,.78); text-transform: uppercase; letter-spacing: .08em; }
-.meta-grid { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+.meta-grid { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
 .meta-grid p { margin: 0; color: rgba(255,255,255,.8); font-size: 14px; }
 .meta-grid strong { color: rgba(255,255,255,.96); margin-right: 6px; }
-.content-grid { display: grid; grid-template-columns: minmax(0,1fr) 396px; gap: 16px; align-items: start; }
-.content-stack { display: grid; gap: 14px; }
+.content-grid { display: grid; grid-template-columns: minmax(0,1fr) clamp(380px, 30vw, 420px); gap: 20px; align-items: start; }
+.content-stack { display: grid; gap: 18px; min-width: 0; }
 h2 { margin: 0 0 8px; font-size: 34px; line-height: 1.05; letter-spacing: -0.02em; }
 h3 { margin: 0 0 8px; font-size: 20px; }
 .copy { margin: 0; color: var(--text-muted); line-height: 1.65; }
@@ -550,8 +559,8 @@ h3 { margin: 0 0 8px; font-size: 20px; }
 .host-stats { border: 1px solid rgba(113,182,255,.38); background: rgba(113,182,255,.12); color: #afdaff; border-radius: 999px; padding: 8px 10px; font-size: 12px; }
 .proof-row { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
 .proof-row span { font-size: 12px; color: rgba(255,255,255,.74); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; }
-.checkout-card { position: sticky; top: 24px; }
-.checkout-shell { display: grid; gap: 12px; }
+.checkout-card { position: sticky; top: 24px; width: 100%; min-width: 380px; max-width: 420px; justify-self: end; flex-shrink: 0; }
+.checkout-shell { display: grid; gap: 16px; min-width: 0; }
 .checkout-price { display: flex; justify-content: space-between; align-items: baseline; }
 .checkout-price-value { margin: 0; font-size: 36px; font-weight: 700; color: #f6dfb2; }
 .checkout-price-sub { margin: 0; color: rgba(255,255,255,.68); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
@@ -566,18 +575,20 @@ h3 { margin: 0 0 8px; font-size: 20px; }
 .reserve-pill { border-radius: 999px; border: 1px solid rgba(113,182,255,.35); background: rgba(113,182,255,.12); color: #a7d5ff; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 8px 12px; width: fit-content; }
 .reserve-pill.is-warning { border-color: rgba(255,170,120,.55); color: #f4d8a7; background: rgba(240,190,100,.14); box-shadow: 0 0 22px rgba(240,190,100,.24); animation: timerPulse 1.8s ease-in-out infinite; }
 @keyframes timerPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.015); } }
-.checkout-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.checkout-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 14px; min-width: 0; }
 .field { display: grid; gap: 6px; }
 .field span { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.68); }
-.field input { width: 100%; border-radius: 13px; border: 1px solid var(--line); background: rgba(11,17,28,.7); color: #e8eef8; padding: 12px 12px; }
+.field input { width: 100%; min-width: 0; border-radius: 13px; border: 1px solid var(--line); background: rgba(11,17,28,.7); color: #e8eef8; padding: 13px 12px; min-height: 48px; }
 .field--full { grid-column: span 2; }
 .field input:focus { outline: none; border-color: rgba(240,190,100,.45); box-shadow: 0 0 0 2px rgba(240,190,100,.13); }
 .form-error { margin: 0; border-radius: 12px; border: 1px solid rgba(255,110,110,.55); background: rgba(120,22,22,.22); color: #ffd0d0; padding: 8px 10px; font-size: 13px; }
+.summary-wrap { border-top: 1px solid rgba(255,255,255,.08); padding-top: 12px; }
 .summary { display: grid; gap: 8px; }
 .summary div { display: flex; align-items: center; justify-content: space-between; color: rgba(255,255,255,.74); }
 .summary strong { color: #ecf2fb; }
-.summary .total { margin-top: 4px; border-top: 1px solid var(--line); padding-top: 8px; color: #f4d8a7; }
-.checkout-btn { width: 100%; }
+.summary .total { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 10px; color: #f4d8a7; font-size: 18px; }
+.action-wrap { display: grid; gap: 12px; }
+.checkout-btn { width: 100%; min-height: 52px; }
 .checkout-btn:hover { filter: brightness(1.06); }
 .status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .status-chip { border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.04); color: rgba(255,255,255,.78); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 6px 10px; }
@@ -619,13 +630,29 @@ h3 { margin: 0 0 8px; font-size: 20px; }
   border: 1px solid var(--line);
   border-bottom: none;
   background: linear-gradient(180deg, rgba(9, 20, 38, 0.98), rgba(5, 12, 24, 0.99));
-  max-height: 86dvh;
-  overflow: auto;
-  padding: 14px 14px 24px;
+  max-height: 90dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 14px 14px calc(12px + env(safe-area-inset-bottom, 0px));
 }
 .sheet-handle { width: 56px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.24); margin: 0 auto 10px; }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .sheet-close { border: 1px solid var(--line); background: rgba(255,255,255,.05); color: #dfe8f8; border-radius: 10px; padding: 8px 10px; }
+.mobile-sheet .checkout-shell { overflow-y: auto; padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+.mobile-sheet .summary-wrap {
+  position: sticky;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(9,20,38,0.2), rgba(9,20,38,0.95) 36%);
+  padding-top: 14px;
+}
+.mobile-sheet .action-wrap {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(9,20,38,0.18), rgba(9,20,38,0.98) 34%);
+  padding-top: 10px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+}
 .skeleton { opacity: 0.92; }
 .skeleton-line {
   height: 12px;
@@ -649,15 +676,21 @@ h3 { margin: 0 0 8px; font-size: 20px; }
   100% { background-position: -200% 0; }
 }
 
+@media (max-width: 1360px) {
+  .content-grid { grid-template-columns: minmax(0,1fr) clamp(360px, 33vw, 400px); }
+  .checkout-card { min-width: 360px; max-width: 400px; }
+}
 @media (max-width: 1120px) {
   .content-grid { grid-template-columns: 1fr; }
-  .desktop-checkout { position: static; }
+  .desktop-checkout { position: static; max-width: none; min-width: 0; justify-self: stretch; }
 }
 @media (max-width: 1024px) {
   .hero-img { height: clamp(260px, 34vw, 320px); }
+  .public-deal > * { padding-inline: 20px; }
 }
 @media (max-width: 767px) {
-  .public-deal { padding: 10px 10px 92px; }
+  .public-deal { padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px)); }
+  .public-deal > * { padding-inline: 16px; }
   .hero-img { height: clamp(220px, 54vw, 260px); }
   .hero-body { position: relative; inset: auto; padding: 14px; }
   .hero-overlay { background: linear-gradient(180deg, rgba(0,0,0,0.06) 0%, rgba(2,6,23,0.62) 76%, rgba(2,6,23,0.95) 100%); }
@@ -672,7 +705,7 @@ h3 { margin: 0 0 8px; font-size: 20px; }
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     z-index: 40;
     align-items: center;
     justify-content: space-between;
@@ -694,7 +727,7 @@ h3 { margin: 0 0 8px; font-size: 20px; }
     font-weight: 700;
     white-space: nowrap;
   }
-  .checkout-fields { grid-template-columns: 1fr; }
+  .checkout-fields { grid-template-columns: 1fr; gap: 14px; }
   .field--full { grid-column: span 1; }
   .status-row { flex-direction: column; align-items: flex-start; }
   .status-copy { text-align: left; }
