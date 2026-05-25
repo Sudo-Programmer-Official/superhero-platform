@@ -1,0 +1,3 @@
+Your payout was processed.
+Amount: $amount
+Payout date: $payout_date

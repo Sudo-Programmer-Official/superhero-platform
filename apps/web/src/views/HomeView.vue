@@ -23,7 +23,9 @@
     <section class="lower-grid">
       <article class="data-panel">
         <h2>Upcoming</h2>
-        <div class="event-list">
+        <div v-if="isLoadingSummary" class="panel-state">Loading upcoming deals…</div>
+        <div v-else-if="upcoming.length === 0" class="panel-state">No upcoming published deals yet.</div>
+        <div v-else class="event-list">
           <div v-for="event in upcoming" :key="event.title" class="event-row">
             <div class="event-row__left">
               <img :src="event.image" :alt="event.title" />
@@ -39,7 +41,9 @@
 
       <article class="data-panel">
         <h2>Recent activity</h2>
-        <div class="activity-list">
+        <div v-if="isLoadingActivity" class="panel-state">Loading activity…</div>
+        <div v-else-if="activities.length === 0" class="panel-state">No activity yet. Publish a deal to get started.</div>
+        <div v-else class="activity-list">
           <div v-for="activity in activities" :key="activity.id" class="activity-row">
             <div class="activity-row__left">
               <img :src="activity.image" alt="Activity" />
@@ -57,7 +61,8 @@
 import { computed, onMounted, ref } from "vue";
 import AppButton from "../design-system/primitives/AppButton.vue";
 import { activityLabel, activityTime, type ActivityEvent } from "../domain/activity";
-import { listActivityEvents } from "../services/api";
+import { formatMoney } from "../domain/deal";
+import { fetchDashboardSummary, listActivityEvents } from "../services/api";
 import { sessionState } from "../stores/session";
 
 const firstName = computed(() => {
@@ -65,36 +70,31 @@ const firstName = computed(() => {
   return displayName.split(/\s+/)[0] || "there";
 });
 
-const metrics = [
-  { label: "Total Bookings", value: "128", growth: "+18% this week" },
-  { label: "Revenue", value: "$3,256", growth: "+21% this week" },
-  { label: "Redemptions", value: "96", growth: "+18% this week" },
-  { label: "Conversion Rate", value: "32%", growth: "+8% this week" }
-];
+const isLoadingSummary = ref(true);
+const isLoadingActivity = ref(true);
+const summary = ref<Awaited<ReturnType<typeof fetchDashboardSummary>> | null>(null);
 
-const upcoming = [
-  {
-    title: "Breathwork Journey",
-    meta: "May 24, 2026 · 7:00 PM",
-    status: "12 / 20",
-    statusTone: "is-green",
-    image: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=120&q=80"
-  },
-  {
-    title: "Morning Flow Yoga",
-    meta: "May 27, 2026 · 8:00 AM",
-    status: "8 / 15",
-    statusTone: "is-gold",
-    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=120&q=80"
-  },
-  {
-    title: "Sound Bath Evening",
-    meta: "May 31, 2026 · 6:30 PM",
-    status: "6 / 20",
-    statusTone: "is-red",
-    image: "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?auto=format&fit=crop&w=120&q=80"
-  }
-];
+const metrics = computed(() => {
+  const m = summary.value?.metrics;
+  return [
+    { label: "Total Bookings", value: String(m?.total_bookings ?? 0), growth: "Live bookings" },
+    { label: "Revenue", value: formatMoney(m?.revenue ?? 0), growth: "Paid checkouts" },
+    { label: "Redemptions", value: String(m?.redemptions ?? 0), growth: "Validated passes" },
+    { label: "Conversion Rate", value: `${(m?.conversion_rate ?? 0).toFixed(1)}%`, growth: "Bookings / live deals" }
+  ];
+});
+
+const upcoming = computed(() =>
+  (summary.value?.upcoming || []).map((item) => ({
+    title: item.title,
+    meta: `${new Date(item.starts_at).toLocaleDateString()} · ${new Date(item.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+    status: `${item.seats_sold} / ${item.capacity}`,
+    statusTone: item.seats_sold >= item.capacity ? "is-red" : item.seats_sold > 0 ? "is-gold" : "is-green",
+    image:
+      item.image ||
+      "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=120&q=80"
+  }))
+);
 
 const activityEvents = ref<ActivityEvent[]>([]);
 const activities = computed(() =>
@@ -109,10 +109,20 @@ const activities = computed(() =>
 onMounted(async () => {
   if (!sessionState.token) return;
   try {
+    summary.value = await fetchDashboardSummary(sessionState.token);
+  } catch {
+    summary.value = null;
+  } finally {
+    isLoadingSummary.value = false;
+  }
+
+  try {
     const page = await listActivityEvents(sessionState.token);
     activityEvents.value = page.items;
   } catch {
     activityEvents.value = [];
+  } finally {
+    isLoadingActivity.value = false;
   }
 });
 </script>
@@ -240,6 +250,14 @@ onMounted(async () => {
   margin-top: 16px;
   display: grid;
   gap: 16px;
+}
+
+.panel-state {
+  margin-top: 16px;
+  border-radius: 14px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.68);
+  padding: 14px;
 }
 
 .event-row {

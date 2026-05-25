@@ -15,16 +15,16 @@ export type ActivityEventPage = {
 
 export function activityLabel(event: ActivityEvent): string {
   const m = event.metadata || {};
-  if (event.event_type === "deal.created") return `Deal created: ${String(m.title || event.entity_id)}`;
-  if (event.event_type === "deal.published") return `Deal published: ${String(m.title || event.entity_id)}`;
-  if (event.event_type === "deal.archived") return `Deal archived: ${String(m.title || event.entity_id)}`;
+  if (event.event_type === "deal.created") return `Deal created: ${String(m.deal_title || m.title || event.entity_id)}`;
+  if (event.event_type === "deal.published") return `Deal published: ${String(m.deal_title || m.title || event.entity_id)}`;
+  if (event.event_type === "deal.archived") return `Deal archived: ${String(m.deal_title || m.title || event.entity_id)}`;
   if (event.event_type === "deal.duplicated") return `Deal duplicated`;
-  if (event.event_type === "booking.created") return `Booking created: ${String(m.booking_number || event.entity_id)}`;
-  if (event.event_type === "booking.paid") return `Booking paid`;
+  if (event.event_type === "booking.created") return `New booking: ${String(m.booking_number || event.entity_id)}`;
+  if (event.event_type === "booking.paid") return `Booking payment confirmed`;
   if (event.event_type === "booking.refunded") return `Booking refunded`;
-  if (event.event_type === "wallet.generated") return "Wallet pass generated";
-  if (event.event_type === "wallet.redeemed") return "Wallet pass redeemed";
-  if (event.event_type === "redemption.success") return "Redemption success";
+  if (event.event_type === "wallet.generated") return `Wallet pass generated`;
+  if (event.event_type === "wallet.redeemed") return `Wallet pass redeemed`;
+  if (event.event_type === "redemption.success") return `Pass redeemed successfully`;
   if (event.event_type === "redemption.failed") return `Redemption failed: ${String(m.reason || "unknown")}`;
   return event.event_type;
 }

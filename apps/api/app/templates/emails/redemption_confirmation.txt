@@ -1,0 +1,4 @@
+Hi $customer_name,
+
+Your pass for $deal_title was redeemed.
+Redeemed at: $redeemed_at

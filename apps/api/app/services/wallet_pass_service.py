@@ -9,12 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.types import AccessContext, AuthPrincipal
 from app.domain_activity_events import ActivityEventType, EventScope, default_tenant
-from app.models import WalletPass
+from app.models import Booking, Customer, DealCard, WalletPass
 from app.repositories.customer_repository import CustomerRepository
 from app.repositories.deal_card_repository import DealCardRepository
 from app.repositories.wallet_pass_repository import WalletPassRepository
 from app.schemas.wallet_pass import WalletPassIssueRequest
 from app.services.activity_pipeline import emit_activity_event
+from app.services.mail_service import MailService
 
 logger = logging.getLogger("app.wallet_pass")
 
@@ -34,8 +35,11 @@ class WalletPassService:
             return model.status
         return "active"
 
-    def _to_wallet_payload(self, model: WalletPass) -> dict:
+    async def _to_wallet_payload(self, model: WalletPass) -> dict:
         provider = (model.wallet_type or "internal").strip().lower()
+        booking = await self.session.get(Booking, model.booking_id) if model.booking_id else None
+        deal = await self.session.get(DealCard, model.deal_id)
+        customer = await self.session.get(Customer, model.customer_id)
         return {
             "id": model.id,
             "booking_id": model.booking_id,
@@ -53,6 +57,10 @@ class WalletPassService:
             "wallet_type": provider,
             "apple_wallet_url": model.apple_wallet_url,
             "google_wallet_url": model.google_wallet_url,
+            "attendee_name": (booking.customer_name if booking and booking.customer_name else (customer.name if customer else None)),
+            "attendee_email": (booking.customer_email if booking else (customer.email if customer else None)),
+            "deal_title": deal.title if deal else None,
+            "booking_number": booking.booking_number if booking else None,
             "created_at": model.created_at,
         }
 
@@ -78,7 +86,10 @@ class WalletPassService:
                 metadata={"count": len(rows)},
             )
             await self.session.commit()
-            return [self._to_wallet_payload(row) for row in rows]
+            payloads: list[dict] = []
+            for row in rows:
+                payloads.append(await self._to_wallet_payload(row))
+            return payloads
         except SQLAlchemyError as exc:
             await self.session.rollback()
             logger.exception("wallet.list.failed", extra={"event": "wallet.list.failed"})
@@ -121,7 +132,7 @@ class WalletPassService:
         await self.session.commit()
         return created
 
-    async def redeem_by_qr(self, qr_code: str, principal: AuthPrincipal) -> WalletPass:
+    async def redeem_by_qr(self, qr_code: str, principal: AuthPrincipal) -> dict:
         if principal.role not in {"super_admin", "admin", "practitioner"}:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role cannot redeem wallet pass")
 
@@ -152,7 +163,14 @@ class WalletPassService:
                 event_type=ActivityEventType.REDEMPTION_FAILED,
                 metadata={"reason": "already_redeemed"},
             )
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Wallet pass already redeemed")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "reason": "already_redeemed",
+                    "redeemed_at": model.redeemed_at.isoformat() if model.redeemed_at else None,
+                    "deal_id": str(model.deal_id),
+                },
+            )
         if model.status == "expired":
             await emit_activity_event(
                 self.session,
@@ -162,7 +180,14 @@ class WalletPassService:
                 event_type=ActivityEventType.REDEMPTION_FAILED,
                 metadata={"reason": "expired"},
             )
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Wallet pass expired")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "reason": "expired",
+                    "expires_at": model.expires_at.isoformat() if model.expires_at else None,
+                    "deal_id": str(model.deal_id),
+                },
+            )
 
         model.status = "redeemed"
         model.redeemed_at = datetime.now(timezone.utc)
@@ -184,7 +209,16 @@ class WalletPassService:
         )
         await self.session.commit()
         await self.session.refresh(model)
-        return model
+        booking = await self.session.get(Booking, model.booking_id) if model.booking_id else None
+        deal = await self.session.get(DealCard, model.deal_id)
+        customer = await self.session.get(Customer, model.customer_id)
+        MailService.send_redemption_confirmation(
+            customer_email=(booking.customer_email if booking else (customer.email if customer else None)),
+            customer_name=(booking.customer_name if booking and booking.customer_name else (customer.name if customer else None)),
+            deal_title=deal.title if deal else "OpenMat Experience",
+            redeemed_at=model.redeemed_at.isoformat() if model.redeemed_at else datetime.now(timezone.utc).isoformat(),
+        )
+        return await self._to_wallet_payload(model)
 
     async def expire_wallet_pass(self, wallet_pass_id: UUID, principal: AuthPrincipal) -> WalletPass:
         if principal.role not in {"super_admin", "admin"}:

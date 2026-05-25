@@ -1,0 +1,10 @@
+Hi $customer_name,
+
+Your booking is confirmed.
+
+Experience: $deal_title
+Date: $starts_at
+Location: $location
+Booking #: $booking_number
+
+Please present your QR pass at check-in.

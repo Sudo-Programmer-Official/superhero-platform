@@ -1,0 +1,4 @@
+Hi $practitioner_name,
+
+Welcome to OpenMat. Your studio is ready.
+Create your first deal to start accepting bookings.

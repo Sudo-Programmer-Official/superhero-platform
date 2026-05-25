@@ -2,7 +2,10 @@
   <div class="toast-stack" aria-live="polite" aria-atomic="true">
     <transition-group name="toast-fade">
       <article v-for="item in items" :key="item.id" class="toast" :data-tone="item.tone">
-        <p>{{ item.message }}</p>
+        <div class="toast__content">
+          <span class="toast__icon">{{ toneIcon(item.tone) }}</span>
+          <p>{{ item.message }}</p>
+        </div>
         <button type="button" @click="dismissToast(item.id)">Dismiss</button>
       </article>
     </transition-group>
@@ -10,9 +13,17 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from "../../stores/toast";
+import { useToast, type ToastTone } from "../../stores/toast";
 
 const { items, dismissToast } = useToast();
+
+function toneIcon(tone: ToastTone): string {
+  if (tone === "success") return "✓";
+  if (tone === "error") return "!";
+  if (tone === "warning") return "!";
+  if (tone === "loading") return "…";
+  return "i";
+}
 </script>
 
 <style scoped>
@@ -38,6 +49,23 @@ const { items, dismissToast } = useToast();
   gap: 10px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
 }
+.toast__content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.toast__icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.2);
+  color: rgba(255,255,255,.92);
+  font-size: 12px;
+  font-weight: 700;
+  flex: 0 0 20px;
+}
 
 .toast p {
   margin: 0;
@@ -56,18 +84,43 @@ const { items, dismissToast } = useToast();
 
 .toast[data-tone="success"] {
   border-color: rgba(69, 232, 176, 0.42);
+  box-shadow: 0 12px 28px rgba(18, 58, 44, 0.45);
 }
 
 .toast[data-tone="error"] {
   border-color: rgba(255, 120, 120, 0.5);
+  box-shadow: 0 12px 28px rgba(77, 25, 25, 0.5);
 }
 
 .toast[data-tone="warning"] {
   border-color: rgba(248, 209, 143, 0.48);
+  box-shadow: 0 12px 28px rgba(83, 58, 23, 0.44);
 }
 
 .toast[data-tone="loading"] {
   border-color: rgba(130, 165, 255, 0.42);
+  box-shadow: 0 12px 28px rgba(31, 45, 79, 0.42);
+}
+
+.toast[data-tone="success"] .toast__icon {
+  border-color: rgba(69, 232, 176, 0.5);
+  color: #45e8b0;
+}
+
+.toast[data-tone="error"] .toast__icon {
+  border-color: rgba(255, 120, 120, 0.6);
+  color: #ff9fa6;
+}
+
+.toast[data-tone="warning"] .toast__icon {
+  border-color: rgba(248, 209, 143, 0.6);
+  color: #f8d18f;
+}
+
+.toast[data-tone="loading"] .toast__icon {
+  border-color: rgba(130, 165, 255, 0.58);
+  color: #a8c7ff;
+  animation: spin 1.2s linear infinite;
 }
 
 .toast-fade-enter-active,
@@ -79,5 +132,10 @@ const { items, dismissToast } = useToast();
 .toast-fade-leave-to {
   opacity: 0;
   transform: translateY(8px);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

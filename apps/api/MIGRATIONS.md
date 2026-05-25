@@ -72,6 +72,33 @@ alembic history
 
 - Migration ordering is in `apps/api/alembic/versions`.
 - Alembic version table is stored under `settings.db_schema` (configured in `alembic/env.py`).
+- For demo flows without Stripe dependency, set `DEMO_CHECKOUT_MODE=true` in `apps/api/.env`.
+
+## Transactional email env contract (SES)
+
+Set these for centralized outbound email:
+
+```bash
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-1
+
+MAIL_FROM_EMAIL=hello@openmat.app
+MAIL_FROM_NAME=OpenMat
+MAIL_REPLY_TO=hello@openmat.app
+```
+
+Canonical mail layer:
+
+- Service: `app/services/mail_service.py`
+- Templates: `app/templates/emails/*.html` + `*.txt`
+- Flow integrations:
+  - booking confirmation
+  - wallet pass delivery
+  - redemption confirmation
+  - onboarding welcome
+
+Mail sending is intentionally failure-isolated: booking/redemption operations succeed even if SES fails.
 
 ## Local admin role bootstrap (Firebase claims)
 
@@ -89,6 +116,37 @@ You can also target by UID:
 
 ```bash
 python3 scripts/set_user_role.py --uid <firebase_uid> --role super_admin
+```
+
+### Common local mistakes (and fixes)
+
+1. `can't open file ... scripts/scripts/set_user_role.py`
+- Cause: running `python3 scripts/set_user_role.py` while already inside `apps/api/scripts`.
+- Fix: run from `apps/api`, or use `python3 ./set_user_role.py` if you are inside `apps/api/scripts`.
+
+Correct:
+
+```bash
+cd apps/api
+python3 scripts/set_user_role.py --email hardimanmatt@icloud.com --role super_admin
+```
+
+Or from inside scripts directory:
+
+```bash
+cd apps/api/scripts
+python3 ./set_user_role.py --email hardimanmatt@icloud.com --role super_admin
+```
+
+2. `ModuleNotFoundError: No module named 'firebase_admin'`
+- Cause: command not using API virtualenv.
+- Fix: activate `apps/api/.venv` (and install deps if needed) before running.
+
+```bash
+cd apps/api
+. .venv/bin/activate
+pip install -r requirements.txt
+python3 scripts/set_user_role.py --email hardimanmatt@icloud.com --role super_admin
 ```
 
 ### Safety behavior

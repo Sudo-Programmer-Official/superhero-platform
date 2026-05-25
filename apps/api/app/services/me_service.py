@@ -6,6 +6,7 @@ from app.auth.types import AuthPrincipal
 from app.domain.permissions import BOOTSTRAP_ROLES, normalize_effective_role
 from app.models import Practitioner
 from app.schemas.me import BootstrapPractitionerRequest, BootstrapPractitionerResponse, MeResponse
+from app.services.mail_service import MailService
 from app.utils.slug import slugify
 
 
@@ -67,4 +68,8 @@ class MeService:
         self.session.add(model)
         await self.session.commit()
         await self.session.refresh(model)
+        MailService.send_onboarding_welcome(
+            recipient_email=principal.email,
+            practitioner_name=model.name,
+        )
         return BootstrapPractitionerResponse(practitioner_id=model.id, created_at=model.created_at)

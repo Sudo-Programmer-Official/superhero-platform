@@ -1,0 +1,5 @@
+Hi $customer_name,
+
+Your pass for $deal_title is ready.
+Present this code at check-in:
+$qr_code

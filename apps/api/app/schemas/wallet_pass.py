@@ -40,4 +40,8 @@ class WalletPassRead(BaseModel):
     wallet_type: str
     apple_wallet_url: str | None
     google_wallet_url: str | None
+    attendee_name: str | None = None
+    attendee_email: str | None = None
+    deal_title: str | None = None
+    booking_number: str | None = None
     created_at: datetime

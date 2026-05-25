@@ -22,8 +22,12 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_connect_client_id: str = ""
     stripe_country: str = "US"
+    mail_from_email: str = "hello@openmat.app"
+    mail_from_name: str = "OpenMat"
+    mail_reply_to: str = "hello@openmat.app"
     payments_enabled: bool = False
     payments_test_mode: bool = False
+    demo_checkout_mode: bool = False
     startup_validation_strict: bool = True
     startup_validation_check_s3: bool = False
     activity_event_retention_days: int = 365

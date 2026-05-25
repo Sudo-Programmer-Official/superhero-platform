@@ -93,8 +93,23 @@ export type WalletPassPayload = {
   wallet_type: string;
   apple_wallet_url: string | null;
   google_wallet_url: string | null;
+  attendee_name: string | null;
+  attendee_email: string | null;
+  deal_title: string | null;
+  booking_number: string | null;
   created_at: string;
 };
+
+export class ApiHttpError extends Error {
+  status: number;
+  detail: unknown;
+  constructor(message: string, status: number, detail: unknown) {
+    super(message);
+    this.name = "ApiHttpError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
 
 export type CheckoutSessionCreatePayload = {
   deal_id: string;
@@ -108,6 +123,24 @@ export type CheckoutSessionCreatePayload = {
 export type CheckoutSessionCreateResponse = {
   checkout_session_id: string;
   checkout_url: string;
+};
+
+export type DashboardSummaryPayload = {
+  metrics: {
+    total_bookings: number;
+    revenue: number;
+    redemptions: number;
+    conversion_rate: number;
+  };
+  upcoming: Array<{
+    id: string;
+    title: string;
+    image: string | null;
+    starts_at: string;
+    location: string;
+    seats_sold: number;
+    capacity: number;
+  }>;
 };
 
 export type AdminPractitionerRow = {
@@ -207,6 +240,12 @@ export async function createCheckoutSession(
   return res.json() as Promise<CheckoutSessionCreateResponse>;
 }
 
+export async function fetchDashboardSummary(token: string): Promise<DashboardSummaryPayload> {
+  const res = await fetch(`${API_BASE}/api/v1/dashboard/summary`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed dashboard summary: ${res.status}`);
+  return res.json() as Promise<DashboardSummaryPayload>;
+}
+
 export async function createDeal(token: string, payload: DealCardCreatePayload): Promise<DealCardPayload> {
   const res = await fetch(`${API_BASE}/api/v1/deal-cards`, {
     method: "POST",
@@ -295,7 +334,16 @@ export async function redeemWalletPass(token: string, qrCode: string): Promise<W
     headers: headers(token),
     body: JSON.stringify({ qr_code: qrCode })
   });
-  if (!res.ok) throw new Error(`Failed redeem: ${res.status}`);
+  if (!res.ok) {
+    let detail: unknown = null;
+    try {
+      const body = (await res.json()) as { detail?: unknown };
+      detail = body?.detail ?? null;
+    } catch {
+      detail = null;
+    }
+    throw new ApiHttpError(`Failed redeem: ${res.status}`, res.status, detail);
+  }
   return res.json() as Promise<WalletPassPayload>;
 }
 

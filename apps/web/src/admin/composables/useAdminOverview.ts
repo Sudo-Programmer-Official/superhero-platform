@@ -1,5 +1,5 @@
 import { computed, ref } from "vue";
-import { listActivityEvents, listBookings, listDeals, listWalletPasses } from "../../services/api";
+import { fetchDashboardSummary, listActivityEvents, listBookings, listDeals, listWalletPasses } from "../../services/api";
 import { sessionState } from "../../stores/session";
 
 export function useAdminOverview() {
@@ -30,21 +30,22 @@ export function useAdminOverview() {
     error.value = "";
     try {
       if (!sessionState.token) throw new Error("Authentication required");
-      const [bookings, deals, passes, events] = await Promise.all([
+      const [summary, bookings, deals, passes, events] = await Promise.all([
+        fetchDashboardSummary(sessionState.token),
         listBookings(sessionState.token),
         listDeals(sessionState.token),
         listWalletPasses(sessionState.token),
         listActivityEvents(sessionState.token)
       ]);
 
-      const gmv = bookings.reduce((sum, booking) => sum + booking.total_amount, 0);
+      const gmv = summary.metrics.revenue;
       const failedPayments = bookings.filter((booking) => booking.payment_status === "failed").length;
       const liveDeals = deals.filter((deal) => deal.status === "published").length;
-      const redeemedToday = passes.filter((pass) => pass.redemption_status === "redeemed").length;
+      const redeemedToday = summary.metrics.redemptions;
       const monthlyRevenue = bookings
         .filter((booking) => new Date(booking.created_at).getMonth() === new Date().getMonth())
         .reduce((sum, booking) => sum + booking.total_amount, 0);
-      const conversionRate = deals.length ? (bookings.length / Math.max(deals.length, 1)) * 100 : 0;
+      const conversionRate = summary.metrics.conversion_rate;
 
       metrics.value = [
         { label: "Total GMV", value: `$${gmv.toFixed(0)}`, delta: "+14%" },

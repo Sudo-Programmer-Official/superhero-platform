@@ -17,6 +17,7 @@ from app.repositories.practitioner_repository import PractitionerRepository
 from app.repositories.wallet_pass_repository import WalletPassRepository
 from app.schemas.payment import CheckoutSessionCreateRequest, CheckoutSessionCreateResponse
 from app.services.activity_pipeline import emit_activity_event
+from app.services.mail_service import MailService
 
 
 class PaymentService:
@@ -28,7 +29,7 @@ class PaymentService:
         stripe.api_key = settings.stripe_secret_key
 
     def _assert_configured(self) -> None:
-        if settings.payments_test_mode:
+        if settings.payments_test_mode or settings.demo_checkout_mode:
             return
         if not settings.stripe_secret_key:
             raise HTTPException(
@@ -156,6 +157,22 @@ class PaymentService:
         )
         await self.session.commit()
 
+        # Email should never block checkout finalization.
+        MailService.send_booking_confirmation(
+            customer_email=customer.email,
+            customer_name=customer.name,
+            deal_title=deal.title,
+            starts_at=deal.start_time.isoformat(),
+            location=deal.location,
+            booking_number=booking.booking_number,
+        )
+        MailService.send_wallet_pass_delivery(
+            customer_email=customer.email,
+            customer_name=customer.name,
+            deal_title=deal.title,
+            qr_code=wallet_pass.qr_code,
+        )
+
     async def create_checkout_session(self, payload: CheckoutSessionCreateRequest) -> CheckoutSessionCreateResponse:
         self._assert_configured()
 
@@ -169,7 +186,7 @@ class PaymentService:
 
         customer = await self._get_or_create_customer(payload.customer_email, payload.customer_name)
 
-        if settings.payments_test_mode:
+        if settings.payments_test_mode or settings.demo_checkout_mode:
             fake_session_id = f"test_cs_{uuid.uuid4().hex}"
             await self._finalize_paid_checkout(fake_session_id, deal.id, customer.id, payload.quantity)
             success_url = self._append_query(
@@ -177,7 +194,7 @@ class PaymentService:
                 {
                     "checkout": "success",
                     "session_id": fake_session_id,
-                    "mode": "test",
+                    "mode": "demo" if settings.demo_checkout_mode else "test",
                 },
             )
             return CheckoutSessionCreateResponse(

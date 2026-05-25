@@ -8,6 +8,7 @@ import {
   setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
+  sendPasswordResetEmail,
   signOut,
   updateProfile,
   type User
@@ -83,6 +84,11 @@ export async function updateCurrentUserProfile(displayName: string, photoURL?: s
 export async function logout(): Promise<void> {
   const currentAuth = requireAuth();
   await signOut(currentAuth);
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const currentAuth = requireAuth();
+  await sendPasswordResetEmail(currentAuth, email.trim());
 }
 
 export async function getFreshIdToken(forceRefresh = false): Promise<string> {

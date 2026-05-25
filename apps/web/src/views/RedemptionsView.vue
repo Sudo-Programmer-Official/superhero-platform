@@ -41,6 +41,7 @@
           <p v-if="!canUseNativeDetector" class="helper helper--warning">Auto QR detect is limited in this browser. Use manual fallback if needed.</p>
 
           <div class="scanner-actions">
+            <AppButton variant="ghost" size="form" disabled title="Torch placeholder for next iteration">Torch (soon)</AppButton>
             <AppButton variant="secondary" size="form" @click="simulateScan">Simulate scan</AppButton>
             <AppButton variant="ghost" size="form" @click="reset">Cancel</AppButton>
           </div>
@@ -57,6 +58,7 @@
             <p><strong>{{ result.attendeeName }}</strong></p>
             <p>{{ result.eventName }}</p>
             <p class="timestamp">{{ formatTime(result.redeemedAt) }}</p>
+            <p class="timestamp">Operator: {{ result.operatorLabel }} · {{ result.deviceLabel }}</p>
           </div>
           <AppButton variant="primary" size="form" @click="reset">Scan next pass</AppButton>
         </div>
@@ -65,7 +67,7 @@
           <div class="result-card result-card--warning">
             <h3>Already redeemed</h3>
             <p>This pass was previously redeemed.</p>
-            <p class="timestamp">Check history for latest timestamp.</p>
+            <p class="timestamp">{{ statusNote || "Check history for latest timestamp." }}</p>
           </div>
           <AppButton variant="secondary" size="form" @click="reset">Try another pass</AppButton>
         </div>
@@ -74,6 +76,7 @@
           <div class="result-card result-card--warning">
             <h3>Pass expired</h3>
             <p>This pass cannot be redeemed anymore.</p>
+            <p class="timestamp">{{ statusNote }}</p>
           </div>
           <AppButton variant="secondary" size="form" @click="reset">Try another pass</AppButton>
         </div>
@@ -82,6 +85,7 @@
           <div class="result-card result-card--error">
             <h3>Invalid pass</h3>
             <p>We could not verify this code.</p>
+            <p class="timestamp">{{ statusNote }}</p>
           </div>
           <AppButton variant="secondary" size="form" @click="reset">Try another pass</AppButton>
         </div>
@@ -90,6 +94,7 @@
           <div class="result-card result-card--error">
             <h3>Offline / session issue</h3>
             <p>Check network and auth session, then retry.</p>
+            <p class="timestamp">{{ statusNote }}</p>
           </div>
           <AppButton variant="secondary" size="form" @click="reset">Retry</AppButton>
         </div>
@@ -161,6 +166,7 @@ const {
   result,
   scannerState,
   scannerError,
+  statusNote,
   setVideoElement,
   simulateScan,
   stateLabel,
@@ -219,6 +225,14 @@ onBeforeUnmount(() => {
   place-items: center;
   color: rgba(255,255,255,.62);
   overflow: hidden;
+}
+.camera-placeholder::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(82,213,139,0.08), transparent 60%);
+  animation: pulse 2.2s ease-in-out infinite;
 }
 .camera-video {
   position: absolute;
@@ -287,6 +301,11 @@ onBeforeUnmount(() => {
   0% { top: 8px; }
   50% { top: calc(100% - 10px); }
   100% { top: 8px; }
+}
+@keyframes pulse {
+  0% { opacity: 0.2; }
+  50% { opacity: 0.55; }
+  100% { opacity: 0.2; }
 }
 
 @media (max-width: 1080px) {
