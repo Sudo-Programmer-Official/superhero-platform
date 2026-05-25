@@ -60,39 +60,45 @@
       <div class="content-grid">
         <div class="content-stack">
           <AppCard>
-            <h2>About this experience</h2>
-            <p class="copy">{{ deal.description || "This guided session is designed to help clients reset and restore." }}</p>
+            <div class="card-inner">
+              <h2>About this experience</h2>
+              <p class="copy">{{ deal.description || "This guided session is designed to help clients reset and restore." }}</p>
 
-            <div class="trust-row">
-              <span>Secure booking</span>
-              <span>Instant confirmation</span>
-              <span>QR access included</span>
-              <span>Refund protected</span>
+              <div class="trust-row">
+                <span>Secure booking</span>
+                <span>Instant confirmation</span>
+                <span>QR access included</span>
+                <span>Refund protected</span>
+              </div>
             </div>
           </AppCard>
 
           <AppCard>
-            <h3>Hosted by</h3>
-            <div class="host-card">
-              <div class="host-avatar">OM</div>
-              <div class="host-main">
-                <p class="host-name">OpenMat Practitioner</p>
-                <p class="host-meta">Wellness · Verified host</p>
+            <div class="card-inner">
+              <h3>Hosted by</h3>
+              <div class="host-card">
+                <div class="host-avatar">OM</div>
+                <div class="host-main">
+                  <p class="host-name">OpenMat Practitioner</p>
+                  <p class="host-meta">Wellness · Verified host</p>
+                </div>
+                <div class="host-stats">143+ hosted</div>
               </div>
-              <div class="host-stats">143+ hosted</div>
-            </div>
-            <div class="proof-row">
-              <span>4.9 host rating</span>
-              <span>12 people viewed today</span>
-              <span>Repeat attendees welcome</span>
+              <div class="proof-row">
+                <span>4.9 host rating</span>
+                <span>12 people viewed today</span>
+                <span>Repeat attendees welcome</span>
+              </div>
             </div>
           </AppCard>
         </div>
 
         <AppCard class="checkout-card desktop-checkout">
-          <h2>Reserve your spot</h2>
-          <p class="copy">Complete details to secure your booking.</p>
-          <CheckoutPanelContent />
+          <div class="card-inner card-inner--checkout">
+            <h2>Reserve your spot</h2>
+            <p class="copy">Complete details to secure your booking.</p>
+            <CheckoutPanelContent />
+          </div>
         </AppCard>
       </div>
 
@@ -118,7 +124,9 @@
             <h2>Checkout</h2>
             <button class="sheet-close" type="button" @click="mobileSheetOpen = false">Close</button>
           </div>
-          <CheckoutPanelContent />
+          <div class="sheet-content">
+            <CheckoutPanelContent />
+          </div>
         </section>
       </div>
 
@@ -551,6 +559,14 @@ onBeforeUnmount(() => {
 .meta-grid strong { color: rgba(255,255,255,.96); margin-right: 6px; }
 .content-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(400px, 440px); gap: 22px; align-items: start; }
 .content-stack { display: grid; gap: 18px; min-width: 0; }
+.card-inner {
+  padding: 24px;
+  display: grid;
+  gap: 14px;
+}
+.card-inner--checkout {
+  gap: 16px;
+}
 h2 { margin: 0 0 8px; font-size: 34px; line-height: 1.05; letter-spacing: -0.02em; }
 h3 { margin: 0 0 8px; font-size: 20px; }
 .copy { margin: 0; color: var(--text-muted); line-height: 1.65; }
@@ -569,8 +585,8 @@ h3 { margin: 0 0 8px; font-size: 20px; }
 .checkout-price { display: flex; justify-content: space-between; align-items: baseline; }
 .checkout-price-value { margin: 0; font-size: 36px; font-weight: 700; color: #f6dfb2; }
 .checkout-price-sub { margin: 0; color: rgba(255,255,255,.68); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
-.scarcity-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.scarcity-pill { border-radius: 999px; border: 1px solid rgba(255,255,255,.2); padding: 7px 10px; font-size: 12px; color: rgba(255,255,255,.8); }
+.scarcity-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.scarcity-pill { display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); padding: 7px 10px; font-size: 12px; color: rgba(255,255,255,.8); }
 .scarcity-pill.is-hot { border-color: rgba(255,170,120,.55); color: #ffd8b2; background: rgba(240,190,100,.14); }
 .qty-row { display: flex; align-items: center; gap: 10px; }
 .qty-btn { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: #dbe5f3; font-size: 21px; transition: transform 160ms ease; }
@@ -580,12 +596,12 @@ h3 { margin: 0 0 8px; font-size: 20px; }
 .reserve-pill { border-radius: 999px; border: 1px solid rgba(113,182,255,.35); background: rgba(113,182,255,.12); color: #a7d5ff; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 8px 12px; width: fit-content; }
 .reserve-pill.is-warning { border-color: rgba(255,170,120,.55); color: #f4d8a7; background: rgba(240,190,100,.14); box-shadow: 0 0 22px rgba(240,190,100,.24); animation: timerPulse 1.8s ease-in-out infinite; }
 @keyframes timerPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.015); } }
-.checkout-fields { display: grid; grid-template-columns: 1fr; gap: 15px; min-width: 0; }
-.field { display: grid; gap: 6px; }
-.field span { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.68); }
-.field input { width: 100%; min-width: 0; border-radius: 13px; border: 1px solid var(--line); background: rgba(11,17,28,.7); color: #e8eef8; padding: 13px 12px; min-height: 48px; }
+.checkout-fields { display: grid; grid-template-columns: 1fr; gap: 15px; min-width: 0; width: 100%; }
+.checkout-fields .field { display: grid; grid-template-columns: 1fr; gap: 6px; min-width: 0; width: 100%; }
+.checkout-fields .field > span { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.68); line-height: 1.2; }
+.checkout-fields .field > input { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; border-radius: 13px; border: 1px solid var(--line); background: rgba(11,17,28,.7); color: #e8eef8; padding: 13px 12px; min-height: 52px; }
 .field--full { grid-column: span 1; }
-.field input:focus { outline: none; border-color: rgba(240,190,100,.45); box-shadow: 0 0 0 2px rgba(240,190,100,.13); }
+.checkout-fields .field > input:focus { outline: none; border-color: rgba(240,190,100,.45); box-shadow: 0 0 0 2px rgba(240,190,100,.13); }
 .form-error { margin: 0; border-radius: 12px; border: 1px solid rgba(255,110,110,.55); background: rgba(120,22,22,.22); color: #ffd0d0; padding: 8px 10px; font-size: 13px; }
 .summary-wrap { border-top: 1px solid rgba(255,255,255,.08); padding-top: 12px; }
 .summary { display: grid; gap: 8px; }
@@ -641,19 +657,29 @@ h3 { margin: 0 0 8px; font-size: 20px; }
   grid-template-rows: auto 1fr;
   padding: 14px 16px calc(12px + env(safe-area-inset-bottom, 0px));
 }
+.sheet-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 2px calc(12px + env(safe-area-inset-bottom, 0px));
+}
 .sheet-handle { width: 56px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.24); margin: 0 auto 10px; }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .sheet-close { border: 1px solid var(--line); background: rgba(255,255,255,.05); color: #dfe8f8; border-radius: 10px; padding: 8px 10px; }
-.mobile-sheet .checkout-shell { overflow-y: auto; padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+.mobile-sheet .checkout-shell { overflow-y: auto; overflow-x: hidden; padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+.mobile-sheet .checkout-fields,
+.mobile-sheet .checkout-fields .field,
+.mobile-sheet .checkout-fields .field > input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
 .mobile-sheet .summary-wrap {
-  position: sticky;
-  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  position: static;
   background: linear-gradient(180deg, rgba(9,20,38,0.2), rgba(9,20,38,0.95) 36%);
   padding-top: 14px;
 }
 .mobile-sheet .action-wrap {
-  position: sticky;
-  bottom: 0;
+  position: static;
   background: linear-gradient(180deg, rgba(9,20,38,0.18), rgba(9,20,38,0.98) 34%);
   padding-top: 10px;
   padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
@@ -711,9 +737,9 @@ h3 { margin: 0 0 8px; font-size: 20px; }
   .page-shell { padding-inline: 16px; }
   .hero-body { padding: 16px; }
   .content-stack { gap: 14px; }
+  .card-inner { padding: 18px; }
   .mobile-sheet { padding: 14px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
-  .mobile-sheet .checkout-shell { padding-bottom: calc(126px + env(safe-area-inset-bottom, 0px)); }
-  .mobile-sheet .summary-wrap { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-sheet .checkout-shell { padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
   .trust-row span { font-size: 11px; }
 }
 @media (max-width: 767px) {
