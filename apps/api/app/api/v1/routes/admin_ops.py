@@ -7,12 +7,16 @@ from app.auth.dependencies import require_roles
 from app.auth.types import AuthPrincipal
 from app.db import get_db_session
 from app.schemas.admin_ops import (
+    AdminBookingRow,
     AdminDealActionRequest,
     AdminDealRow,
     AdminPayoutActionRequest,
     AdminPayoutRow,
     AdminPractitionerActionRequest,
     AdminPractitionerRow,
+    AdminRedemptionRow,
+    AdminTimelineEventRow,
+    AdminWalletPassRow,
 )
 from app.services.admin_ops_service import AdminOpsService
 
@@ -76,3 +80,44 @@ async def payout_action(
     session: AsyncSession = Depends(get_db_session),
 ):
     return await AdminOpsService(session).apply_payout_action(practitioner_id=practitioner_id, action=payload.action)
+
+
+@router.get("/bookings", response_model=list[AdminBookingRow])
+async def list_admin_bookings(
+    query: str | None = Query(default=None),
+    payment_status: str | None = Query(default=None, alias="status"),
+    _: AuthPrincipal = Depends(require_roles("super_admin", "admin", "operator", "finance_admin", "support_admin")),
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await AdminOpsService(session).list_bookings(query=query, payment_status=payment_status)
+
+
+@router.get("/wallet-passes", response_model=list[AdminWalletPassRow])
+async def list_admin_wallet_passes(
+    query: str | None = Query(default=None),
+    pass_status: str | None = Query(default=None, alias="status"),
+    _: AuthPrincipal = Depends(require_roles("super_admin", "admin", "operator", "support_admin", "moderator")),
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await AdminOpsService(session).list_wallet_passes(query=query, pass_status=pass_status)
+
+
+@router.get("/redemptions", response_model=list[AdminRedemptionRow])
+async def list_admin_redemptions(
+    query: str | None = Query(default=None),
+    window: str | None = Query(default="24h"),
+    _: AuthPrincipal = Depends(require_roles("super_admin", "admin", "operator", "support_admin", "moderator")),
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await AdminOpsService(session).list_redemptions(query=query, window=window)
+
+
+@router.get("/timeline", response_model=list[AdminTimelineEventRow])
+async def list_admin_timeline(
+    entity_type: str,
+    entity_id: str,
+    limit: int = Query(default=80, ge=1, le=200),
+    _: AuthPrincipal = Depends(require_roles("super_admin", "admin", "operator", "support_admin", "moderator")),
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await AdminOpsService(session).list_timeline(entity_type=entity_type, entity_id=entity_id, limit=limit)

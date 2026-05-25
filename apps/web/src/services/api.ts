@@ -125,6 +125,18 @@ export type CheckoutSessionCreateResponse = {
   checkout_url: string;
 };
 
+export type CheckoutSessionResultResponse = {
+  checkout_session_id: string;
+  status: "pending" | "ready";
+  wallet_pass_id: string | null;
+  booking_id: string | null;
+  booking_number: string | null;
+  qr_code: string | null;
+  apple_wallet_url: string | null;
+  google_wallet_url: string | null;
+  pass_url: string | null;
+};
+
 export type DashboardSummaryPayload = {
   metrics: {
     total_bookings: number;
@@ -180,6 +192,58 @@ export type AdminPayoutRow = {
   transaction_count: number;
   processing_date: string | null;
   payout_date: string | null;
+};
+
+export type AdminBookingRow = {
+  id: string;
+  booking_number: string;
+  deal_title: string;
+  practitioner_name: string;
+  customer_name: string | null;
+  customer_email: string;
+  quantity: number;
+  total_amount: string | number;
+  currency: string;
+  payment_status: string;
+  redemption_status: string;
+  wallet_pass_id: string | null;
+  created_at: string;
+};
+
+export type AdminWalletPassRow = {
+  id: string;
+  deal_title: string;
+  practitioner_name: string;
+  attendee_email: string | null;
+  booking_number: string | null;
+  pass_status: string;
+  redemption_status: string;
+  wallet_type: string;
+  source_checkout_session_id: string | null;
+  qr_code: string;
+  created_at: string;
+};
+
+export type AdminRedemptionRow = {
+  wallet_pass_id: string;
+  deal_title: string | null;
+  practitioner_name: string | null;
+  attendee_email: string | null;
+  success_count: number;
+  failed_count: number;
+  duplicate_attempts: number;
+  invalid_attempts: number;
+  last_event_at: string;
+  risk_level: string;
+};
+
+export type AdminTimelineEventRow = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  event_type: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -238,6 +302,12 @@ export async function createCheckoutSession(
   });
   if (!res.ok) throw new Error(`Failed checkout session: ${res.status}`);
   return res.json() as Promise<CheckoutSessionCreateResponse>;
+}
+
+export async function fetchCheckoutResult(sessionId: string): Promise<CheckoutSessionResultResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/payments/checkout-result?session_id=${encodeURIComponent(sessionId)}`);
+  if (!res.ok) throw new Error(`Failed checkout result: ${res.status}`);
+  return res.json() as Promise<CheckoutSessionResultResponse>;
 }
 
 export async function fetchDashboardSummary(token: string): Promise<DashboardSummaryPayload> {
@@ -444,4 +514,57 @@ export async function adminPayoutAction(
   });
   if (!res.ok) throw new Error(`Failed payout action: ${res.status}`);
   return (await res.json()) as AdminPayoutRow;
+}
+
+export async function listAdminBookings(token: string, query?: string, bookingStatus?: string): Promise<AdminBookingRow[]> {
+  const params = new URLSearchParams();
+  if (query?.trim()) params.set("query", query.trim());
+  if (bookingStatus?.trim()) params.set("status", bookingStatus.trim());
+  const q = params.toString();
+  const res = await fetch(`${API_BASE}/api/v1/admin/bookings${q ? `?${q}` : ""}`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed admin bookings: ${res.status}`);
+  return (await res.json()) as AdminBookingRow[];
+}
+
+export async function listAdminWalletPasses(
+  token: string,
+  query?: string,
+  passStatus?: string
+): Promise<AdminWalletPassRow[]> {
+  const params = new URLSearchParams();
+  if (query?.trim()) params.set("query", query.trim());
+  if (passStatus?.trim()) params.set("status", passStatus.trim());
+  const q = params.toString();
+  const res = await fetch(`${API_BASE}/api/v1/admin/wallet-passes${q ? `?${q}` : ""}`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed admin wallet passes: ${res.status}`);
+  return (await res.json()) as AdminWalletPassRow[];
+}
+
+export async function listAdminRedemptions(
+  token: string,
+  query?: string,
+  window: "24h" | "7d" | "30d" | "all" = "24h"
+): Promise<AdminRedemptionRow[]> {
+  const params = new URLSearchParams();
+  if (query?.trim()) params.set("query", query.trim());
+  params.set("window", window);
+  const q = params.toString();
+  const res = await fetch(`${API_BASE}/api/v1/admin/redemptions${q ? `?${q}` : ""}`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed admin redemptions: ${res.status}`);
+  return (await res.json()) as AdminRedemptionRow[];
+}
+
+export async function listAdminTimeline(
+  token: string,
+  entityType: string,
+  entityId: string,
+  limit = 80
+): Promise<AdminTimelineEventRow[]> {
+  const params = new URLSearchParams();
+  params.set("entity_type", entityType);
+  params.set("entity_id", entityId);
+  params.set("limit", String(limit));
+  const res = await fetch(`${API_BASE}/api/v1/admin/timeline?${params.toString()}`, { headers: headers(token) });
+  if (!res.ok) throw new Error(`Failed admin timeline: ${res.status}`);
+  return (await res.json()) as AdminTimelineEventRow[];
 }

@@ -10,6 +10,17 @@
           <h3>{{ sectionTitle }} Operations</h3>
           <p v-if="selectedCount > 0">{{ selectedCount }} selected</p>
         </div>
+        <select
+          v-if="mode === 'redemptions'"
+          v-model="redemptionOps.window"
+          class="window-select"
+          @change="onRedemptionWindowChange"
+        >
+          <option value="24h">Last 24h</option>
+          <option value="7d">Last 7d</option>
+          <option value="30d">Last 30d</option>
+          <option value="all">All time</option>
+        </select>
         <input v-model="query" class="query" :placeholder="`Search ${sectionTitle}`" />
       </div>
       <AppLoadingState
@@ -97,6 +108,71 @@
         </AppDataTable>
       </template>
 
+      <template v-else-if="mode === 'bookings'">
+        <AppDataTable
+          :columns="bookingColumns"
+          :rows="bookingOps.filtered"
+          :row-key="(row) => String(row.id)"
+          selectable
+          @selection-change="handleSelectionChange"
+        >
+          <template #cell-total_amount="{ row }">${{ Number(row.total_amount).toFixed(2) }} {{ row.currency }}</template>
+          <template #cell-payment_status="{ row }"><AppStatusPill :status="String(row.payment_status)" /></template>
+          <template #cell-redemption_status="{ row }"><AppStatusPill :status="String(row.redemption_status)" /></template>
+          <template #cell-actions="{ row }">
+            <div class="actions">
+              <button @click="openTimeline('booking', String(row.id), row.booking_number)">Timeline</button>
+              <button v-if="row.wallet_pass_id" @click="openWalletPassContext(String(row.wallet_pass_id))">Open pass</button>
+              <button @click="openDealContext(String(row.deal_title))">Open deal</button>
+              <button @click="openPractitionerContext(String(row.practitioner_name))">Open practitioner</button>
+            </div>
+          </template>
+          <template #empty><AppEmptyState title="No bookings" description="No bookings found in the current scope." /></template>
+        </AppDataTable>
+      </template>
+
+      <template v-else-if="mode === 'wallet-passes'">
+        <AppDataTable
+          :columns="walletPassColumns"
+          :rows="walletPassOps.filtered"
+          :row-key="(row) => String(row.id)"
+          selectable
+          @selection-change="handleSelectionChange"
+        >
+          <template #cell-id="{ row }">#{{ String(row.id).slice(0, 8) }}</template>
+          <template #cell-pass_status="{ row }"><AppStatusPill :status="String(row.pass_status)" /></template>
+          <template #cell-redemption_status="{ row }"><AppStatusPill :status="String(row.redemption_status)" /></template>
+          <template #cell-actions="{ row }">
+            <div class="actions">
+              <button @click="openTimeline('wallet_pass', String(row.id), `Pass ${String(row.id).slice(0, 8)}`)">Timeline</button>
+              <button @click="openRedemptionContext(String(row.id))">Open redemptions</button>
+              <button @click="openDealContext(String(row.deal_title))">Open deal</button>
+            </div>
+          </template>
+          <template #empty><AppEmptyState title="No wallet passes" description="No wallet pass lifecycle records found." /></template>
+        </AppDataTable>
+      </template>
+
+      <template v-else-if="mode === 'redemptions'">
+        <AppDataTable
+          :columns="redemptionColumns"
+          :rows="redemptionOps.filtered"
+          :row-key="(row) => String(row.wallet_pass_id)"
+          selectable
+          @selection-change="handleSelectionChange"
+        >
+          <template #cell-wallet_pass_id="{ row }">#{{ String(row.wallet_pass_id).slice(0, 8) }}</template>
+          <template #cell-risk_level="{ row }"><AppStatusPill :status="String(row.risk_level)" /></template>
+          <template #cell-actions="{ row }">
+            <div class="actions">
+              <button @click="openTimeline('redemption', String(row.wallet_pass_id), `Redemption ${String(row.wallet_pass_id).slice(0, 8)}`)">Timeline</button>
+              <button @click="openWalletPassContext(String(row.wallet_pass_id))">Open pass</button>
+            </div>
+          </template>
+          <template #empty><AppEmptyState title="No redemption events" description="No redemption lifecycle events found." /></template>
+        </AppDataTable>
+      </template>
+
       <template v-else-if="mode === 'moderation'">
         <AppDataTable
           :columns="moderationColumns"
@@ -138,32 +214,74 @@
       @cancel="closeConfirm"
       @confirm="runConfirm"
     />
+
+    <AppModal :open="timelineOpen" @close="closeTimeline">
+      <div class="timeline-modal">
+        <div class="timeline-head">
+          <h4>{{ timelineTitle }}</h4>
+          <button class="timeline-refresh" @click="reloadTimeline">Refresh</button>
+        </div>
+        <p class="timeline-sub">{{ timelineEntityType }} · {{ timelineEntityId }}</p>
+        <p v-if="timelineError" class="timeline-error">{{ timelineError }}</p>
+        <p v-else-if="timelineLoading" class="timeline-loading">Loading timeline…</p>
+        <div v-else-if="timelineEvents.length === 0" class="timeline-empty">No timeline events yet.</div>
+        <ul v-else class="timeline-list">
+          <li v-for="event in timelineEvents" :key="event.id" class="timeline-item">
+            <p class="timeline-event">{{ event.event_type }}</p>
+            <p class="timeline-time">{{ formatTimelineTime(event.created_at) }}</p>
+            <p class="timeline-entity">{{ event.entity_type }} · {{ event.entity_id }}</p>
+            <div v-if="timelineMetadataPairs(event).length" class="timeline-meta">
+              <span v-for="pair in timelineMetadataPairs(event)" :key="`${event.id}-${pair.key}`" class="meta-chip">
+                {{ pair.key }}: {{ pair.value }}
+              </span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </AppModal>
   </DashboardPageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useDealOps } from "../composables/useDealOps";
 import { useModerationCenter } from "../composables/useModerationCenter";
 import { usePayoutOps } from "../composables/usePayoutOps";
 import { usePractitionerOps } from "../composables/usePractitionerOps";
+import { useBookingOps } from "../composables/useBookingOps";
+import { useRedemptionOps } from "../composables/useRedemptionOps";
+import { useWalletPassOps } from "../composables/useWalletPassOps";
+import { listAdminTimeline, type AdminTimelineEventRow } from "../../services/api";
+import { sessionState } from "../../stores/session";
 import AppDataTable from "../../design-system/patterns/AppDataTable.vue";
 import AppButton from "../../design-system/primitives/AppButton.vue";
 import AppConfirmModal from "../../design-system/primitives/AppConfirmModal.vue";
 import AppEmptyState from "../../design-system/primitives/AppEmptyState.vue";
 import AppErrorState from "../../design-system/primitives/AppErrorState.vue";
 import AppLoadingState from "../../design-system/primitives/AppLoadingState.vue";
+import AppModal from "../../design-system/primitives/AppModal.vue";
 import AppStatusPill from "../../design-system/primitives/AppStatusPill.vue";
 import DashboardPageShell from "../../design-system/patterns/DashboardPageShell.vue";
 import PaddedSectionCard from "../../design-system/patterns/PaddedSectionCard.vue";
 
 const route = useRoute();
+const router = useRouter();
 const practitionerOps = usePractitionerOps();
 const dealOps = useDealOps();
 const payoutOps = usePayoutOps();
 const moderation = useModerationCenter();
+const bookingOps = useBookingOps();
+const walletPassOps = useWalletPassOps();
+const redemptionOps = useRedemptionOps();
 const selectedCount = ref(0);
+const timelineOpen = ref(false);
+const timelineLoading = ref(false);
+const timelineError = ref("");
+const timelineEvents = ref<AdminTimelineEventRow[]>([]);
+const timelineEntityType = ref("");
+const timelineEntityId = ref("");
+const timelineTitle = ref("Timeline");
 
 const mode = computed(() => String(route.meta.adminMode || "generic"));
 const query = computed({
@@ -171,6 +289,9 @@ const query = computed({
     if (mode.value === "practitioners") return practitionerOps.query.value;
     if (mode.value === "deals") return dealOps.query.value;
     if (mode.value === "payouts") return payoutOps.query.value;
+    if (mode.value === "bookings") return bookingOps.query.value;
+    if (mode.value === "wallet-passes") return walletPassOps.query.value;
+    if (mode.value === "redemptions") return redemptionOps.query.value;
     if (mode.value === "moderation") return moderation.query.value;
     return "";
   },
@@ -178,6 +299,9 @@ const query = computed({
     if (mode.value === "practitioners") practitionerOps.query.value = value;
     if (mode.value === "deals") dealOps.query.value = value;
     if (mode.value === "payouts") payoutOps.query.value = value;
+    if (mode.value === "bookings") bookingOps.query.value = value;
+    if (mode.value === "wallet-passes") walletPassOps.query.value = value;
+    if (mode.value === "redemptions") redemptionOps.query.value = value;
     if (mode.value === "moderation") moderation.query.value = value;
   }
 });
@@ -219,6 +343,36 @@ const moderationColumns = [
   { key: "state", label: "State" },
   { key: "actions", label: "Actions" }
 ];
+const bookingColumns = [
+  { key: "booking_number", label: "Booking" },
+  { key: "deal_title", label: "Deal" },
+  { key: "practitioner_name", label: "Practitioner" },
+  { key: "customer_email", label: "Attendee" },
+  { key: "total_amount", label: "Amount" },
+  { key: "payment_status", label: "Payment" },
+  { key: "redemption_status", label: "Redemption" },
+  { key: "actions", label: "Actions" }
+];
+const walletPassColumns = [
+  { key: "id", label: "Pass ID" },
+  { key: "deal_title", label: "Deal" },
+  { key: "practitioner_name", label: "Practitioner" },
+  { key: "attendee_email", label: "Attendee" },
+  { key: "pass_status", label: "Pass" },
+  { key: "redemption_status", label: "Redemption" },
+  { key: "wallet_type", label: "Wallet" },
+  { key: "actions", label: "Actions" }
+];
+const redemptionColumns = [
+  { key: "wallet_pass_id", label: "Pass" },
+  { key: "deal_title", label: "Deal" },
+  { key: "practitioner_name", label: "Practitioner" },
+  { key: "attendee_email", label: "Attendee" },
+  { key: "duplicate_attempts", label: "Duplicates" },
+  { key: "invalid_attempts", label: "Invalid" },
+  { key: "risk_level", label: "Risk" },
+  { key: "actions", label: "Actions" }
+];
 
 type PendingAction = { title: string; description: string; run: () => void | Promise<void> };
 const pendingAction = ref<PendingAction | null>(null);
@@ -229,12 +383,18 @@ const currentError = computed(() => {
   if (mode.value === "practitioners") return practitionerOps.error.value;
   if (mode.value === "deals") return dealOps.error.value;
   if (mode.value === "payouts") return payoutOps.error.value;
+  if (mode.value === "bookings") return bookingOps.error.value;
+  if (mode.value === "wallet-passes") return walletPassOps.error.value;
+  if (mode.value === "redemptions") return redemptionOps.error.value;
   return "";
 });
 const currentLoading = computed(() => {
   if (mode.value === "practitioners") return practitionerOps.loading.value;
   if (mode.value === "deals") return dealOps.loading.value;
   if (mode.value === "payouts") return payoutOps.loading.value;
+  if (mode.value === "bookings") return bookingOps.loading.value;
+  if (mode.value === "wallet-passes") return walletPassOps.loading.value;
+  if (mode.value === "redemptions") return redemptionOps.loading.value;
   return false;
 });
 
@@ -248,6 +408,9 @@ async function refreshCurrent() {
   if (mode.value === "practitioners") return practitionerOps.load();
   if (mode.value === "deals") return dealOps.load();
   if (mode.value === "payouts") return payoutOps.load();
+  if (mode.value === "bookings") return bookingOps.load();
+  if (mode.value === "wallet-passes") return walletPassOps.load();
+  if (mode.value === "redemptions") return redemptionOps.load();
 }
 
 function confirmAction(title: string, description: string, run: () => void | Promise<void>) {
@@ -296,6 +459,94 @@ async function bulkModerationResolve(keys: string[]) {
 watch(mode, () => {
   void refreshCurrent();
 }, { immediate: true });
+
+function onRedemptionWindowChange() {
+  if (mode.value === "redemptions") {
+    void redemptionOps.load();
+  }
+}
+
+async function navigateAdmin(name: string, queryText = "") {
+  if (name === "admin-bookings") bookingOps.query.value = queryText;
+  if (name === "admin-wallet-passes") walletPassOps.query.value = queryText;
+  if (name === "admin-redemptions") redemptionOps.query.value = queryText;
+  if (name === "admin-deals") dealOps.query.value = queryText;
+  if (name === "admin-practitioners") practitionerOps.query.value = queryText;
+  await router.push({ name });
+}
+
+async function openWalletPassContext(walletPassId: string) {
+  await navigateAdmin("admin-wallet-passes", walletPassId);
+}
+
+async function openRedemptionContext(walletPassId: string) {
+  await navigateAdmin("admin-redemptions", walletPassId);
+}
+
+async function openDealContext(dealTitle: string) {
+  await navigateAdmin("admin-deals", dealTitle);
+}
+
+async function openPractitionerContext(practitionerName: string) {
+  await navigateAdmin("admin-practitioners", practitionerName);
+}
+
+async function openTimeline(entityType: string, entityId: string, title: string) {
+  timelineEntityType.value = entityType;
+  timelineEntityId.value = entityId;
+  timelineTitle.value = title;
+  timelineOpen.value = true;
+  await reloadTimeline();
+}
+
+async function reloadTimeline() {
+  if (!sessionState.token || !timelineEntityType.value || !timelineEntityId.value) return;
+  timelineLoading.value = true;
+  timelineError.value = "";
+  try {
+    timelineEvents.value = await listAdminTimeline(
+      sessionState.token,
+      timelineEntityType.value,
+      timelineEntityId.value,
+      100
+    );
+  } catch (err) {
+    timelineError.value = `Failed to load timeline: ${String(err)}`;
+  } finally {
+    timelineLoading.value = false;
+  }
+}
+
+function closeTimeline() {
+  timelineOpen.value = false;
+  timelineEvents.value = [];
+  timelineError.value = "";
+}
+
+function formatTimelineTime(value: string): string {
+  return new Date(value).toLocaleString();
+}
+
+function timelineMetadataPairs(event: AdminTimelineEventRow): Array<{ key: string; value: string }> {
+  const md = event.metadata || {};
+  const priorityKeys = [
+    "reason",
+    "booking_number",
+    "amount",
+    "currency",
+    "quantity",
+    "deal_id",
+    "customer_id",
+    "wallet_pass_id",
+  ];
+  const pairs: Array<{ key: string; value: string }> = [];
+  for (const key of priorityKeys) {
+    const raw = md[key];
+    if (raw === undefined || raw === null || raw === "") continue;
+    pairs.push({ key, value: String(raw) });
+  }
+  return pairs;
+}
 </script>
 
 <style scoped>
@@ -304,9 +555,23 @@ watch(mode, () => {
 .section-head h3 { margin: 0; font-size: 24px; }
 .section-head p { margin: 0; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.58); }
 .query { min-height: 42px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(12,18,30,.62); color: #dbe5f3; padding: 0 12px; }
+.window-select { min-height: 42px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(12,18,30,.62); color: #dbe5f3; padding: 0 12px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .actions button { border-radius: 999px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.05); color: rgba(255,255,255,.84); padding: 4px 10px; }
 .actions .danger { border-color: rgba(255,159,166,.35); color: #ffc0c5; background: rgba(255,159,166,.1); }
+.timeline-modal { display: grid; gap: 10px; }
+.timeline-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.timeline-head h4 { margin: 0; font-size: 20px; }
+.timeline-refresh { border-radius: 10px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05); color: rgba(255,255,255,.86); padding: 6px 10px; }
+.timeline-sub { margin: 0; color: rgba(255,255,255,.65); font-size: 12px; }
+.timeline-error { margin: 0; color: #ffbcbc; }
+.timeline-loading, .timeline-empty { margin: 0; color: rgba(255,255,255,.74); }
+.timeline-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 420px; overflow: auto; }
+.timeline-item { border-radius: 10px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); padding: 8px 10px; display: grid; gap: 2px; }
+.timeline-event { margin: 0; font-weight: 600; }
+.timeline-time, .timeline-entity { margin: 0; font-size: 12px; color: rgba(255,255,255,.68); }
+.timeline-meta { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+.meta-chip { border: 1px solid rgba(255,255,255,.16); border-radius: 999px; padding: 3px 8px; font-size: 11px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.05); }
 .placeholder-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
 .placeholder-card { border-radius: 14px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); padding: 14px; display: grid; gap: 8px; }
 .placeholder-card h4 { margin: 0; font-size: 18px; }

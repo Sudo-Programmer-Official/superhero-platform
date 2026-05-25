@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import json
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
@@ -87,7 +88,31 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        raw = (self.cors_origins or "").strip()
+        if not raw:
+            return []
+
+        origins: list[str]
+        if raw.startswith("["):
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, list):
+                    origins = [str(item) for item in parsed]
+                else:
+                    origins = [raw]
+            except json.JSONDecodeError:
+                origins = raw.split(",")
+        else:
+            origins = raw.split(",")
+
+        normalized: list[str] = []
+        for origin in origins:
+            cleaned = self._clean_url(origin)
+            if not cleaned:
+                continue
+            # Browsers send Origin without trailing slash; keep parity for exact CORS match.
+            normalized.append(cleaned.rstrip("/"))
+        return normalized
 
     @property
     def required_env_keys(self) -> list[str]:

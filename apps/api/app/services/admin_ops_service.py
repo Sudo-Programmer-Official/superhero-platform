@@ -1,13 +1,21 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import case, cast, func, or_, select, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Booking, DealCard, Practitioner
-from app.schemas.admin_ops import AdminDealRow, AdminPayoutRow, AdminPractitionerRow
+from app.models import ActivityEvent, Booking, DealCard, Practitioner, WalletPass
+from app.schemas.admin_ops import (
+    AdminBookingRow,
+    AdminDealRow,
+    AdminPayoutRow,
+    AdminPractitionerRow,
+    AdminRedemptionRow,
+    AdminTimelineEventRow,
+    AdminWalletPassRow,
+)
 
 
 class AdminOpsService:
@@ -228,3 +236,245 @@ class AdminOpsService:
             if row.practitioner_id == practitioner_id:
                 return row
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Unable to reload payout row")
+
+    async def list_bookings(self, query: str | None = None, payment_status: str | None = None) -> list[AdminBookingRow]:
+        stmt = (
+            select(
+                Booking.id,
+                Booking.booking_number,
+                DealCard.title.label("deal_title"),
+                Practitioner.name.label("practitioner_name"),
+                Booking.customer_name,
+                Booking.customer_email,
+                Booking.quantity,
+                Booking.total_amount,
+                Booking.currency,
+                Booking.payment_status,
+                Booking.redemption_status,
+                Booking.wallet_pass_id,
+                Booking.created_at,
+            )
+            .join(DealCard, DealCard.id == Booking.deal_id)
+            .join(Practitioner, Practitioner.id == Booking.practitioner_id)
+            .order_by(Booking.created_at.desc())
+        )
+        if query:
+            pattern = f"%{query.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    Booking.booking_number.ilike(pattern),
+                    Booking.customer_email.ilike(pattern),
+                    Booking.customer_name.ilike(pattern),
+                    DealCard.title.ilike(pattern),
+                    Practitioner.name.ilike(pattern),
+                )
+            )
+        if payment_status and payment_status != "all":
+            stmt = stmt.where(Booking.payment_status == payment_status)
+
+        rows = (await self.session.execute(stmt)).all()
+        return [
+            AdminBookingRow(
+                id=row.id,
+                booking_number=row.booking_number,
+                deal_title=row.deal_title,
+                practitioner_name=row.practitioner_name,
+                customer_name=row.customer_name,
+                customer_email=row.customer_email,
+                quantity=int(row.quantity),
+                total_amount=Decimal(row.total_amount or 0),
+                currency=row.currency,
+                payment_status=row.payment_status,
+                redemption_status=row.redemption_status,
+                wallet_pass_id=row.wallet_pass_id,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
+
+    async def list_wallet_passes(self, query: str | None = None, pass_status: str | None = None) -> list[AdminWalletPassRow]:
+        stmt = (
+            select(
+                WalletPass.id,
+                DealCard.title.label("deal_title"),
+                Practitioner.name.label("practitioner_name"),
+                Booking.customer_email.label("attendee_email"),
+                Booking.booking_number.label("booking_number"),
+                WalletPass.status.label("pass_status"),
+                WalletPass.wallet_type,
+                WalletPass.source_checkout_session_id,
+                WalletPass.qr_code,
+                WalletPass.created_at,
+            )
+            .join(DealCard, DealCard.id == WalletPass.deal_id)
+            .join(Practitioner, Practitioner.id == DealCard.practitioner_id)
+            .outerjoin(Booking, Booking.id == WalletPass.booking_id)
+            .order_by(WalletPass.created_at.desc())
+        )
+        if query:
+            pattern = f"%{query.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    DealCard.title.ilike(pattern),
+                    Practitioner.name.ilike(pattern),
+                    Booking.customer_email.ilike(pattern),
+                    Booking.booking_number.ilike(pattern),
+                    WalletPass.qr_code.ilike(pattern),
+                )
+            )
+        if pass_status and pass_status != "all":
+            stmt = stmt.where(WalletPass.status == pass_status)
+
+        rows = (await self.session.execute(stmt)).all()
+        return [
+            AdminWalletPassRow(
+                id=row.id,
+                deal_title=row.deal_title,
+                practitioner_name=row.practitioner_name,
+                attendee_email=row.attendee_email,
+                booking_number=row.booking_number,
+                pass_status=row.pass_status,
+                redemption_status="redeemed" if row.pass_status == "redeemed" else row.pass_status if row.pass_status in {"expired", "revoked"} else "active",
+                wallet_type=row.wallet_type,
+                source_checkout_session_id=row.source_checkout_session_id,
+                qr_code=row.qr_code,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]
+
+    async def list_redemptions(self, query: str | None = None, window: str | None = None) -> list[AdminRedemptionRow]:
+        reason_expr = cast(ActivityEvent.event_metadata["reason"].astext, String)
+        duplicate_expr = func.sum(case((reason_expr == "already_redeemed", 1), else_=0))
+        invalid_expr = func.sum(case((reason_expr == "not_found", 1), else_=0))
+        success_expr = func.sum(case((ActivityEvent.event_type == "redemption.success", 1), else_=0))
+        failed_expr = func.sum(case((ActivityEvent.event_type == "redemption.failed", 1), else_=0))
+        last_event_expr = func.max(ActivityEvent.created_at)
+
+        stmt = (
+            select(
+                ActivityEvent.entity_id.label("wallet_pass_id"),
+                DealCard.title.label("deal_title"),
+                Practitioner.name.label("practitioner_name"),
+                Booking.customer_email.label("attendee_email"),
+                success_expr.label("success_count"),
+                failed_expr.label("failed_count"),
+                duplicate_expr.label("duplicate_attempts"),
+                invalid_expr.label("invalid_attempts"),
+                last_event_expr.label("last_event_at"),
+            )
+            .outerjoin(WalletPass, cast(WalletPass.id, String) == ActivityEvent.entity_id)
+            .outerjoin(DealCard, DealCard.id == WalletPass.deal_id)
+            .outerjoin(Practitioner, Practitioner.id == DealCard.practitioner_id)
+            .outerjoin(Booking, Booking.id == WalletPass.booking_id)
+            .where(ActivityEvent.entity_type == "redemption")
+            .where(ActivityEvent.event_type.in_(["redemption.success", "redemption.failed"]))
+            .group_by(ActivityEvent.entity_id, DealCard.title, Practitioner.name, Booking.customer_email)
+            .order_by(last_event_expr.desc())
+        )
+        if window and window != "all":
+            now = datetime.now(timezone.utc)
+            cutoff: datetime | None = None
+            if window == "24h":
+                cutoff = now - timedelta(hours=24)
+            elif window == "7d":
+                cutoff = now - timedelta(days=7)
+            elif window == "30d":
+                cutoff = now - timedelta(days=30)
+            if cutoff is not None:
+                stmt = stmt.where(ActivityEvent.created_at >= cutoff)
+        if query:
+            pattern = f"%{query.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    ActivityEvent.entity_id.ilike(pattern),
+                    Booking.customer_email.ilike(pattern),
+                    DealCard.title.ilike(pattern),
+                    Practitioner.name.ilike(pattern),
+                )
+            )
+
+        rows = (await self.session.execute(stmt)).all()
+        data: list[AdminRedemptionRow] = []
+        for row in rows:
+            duplicate_attempts = int(row.duplicate_attempts or 0)
+            invalid_attempts = int(row.invalid_attempts or 0)
+            failed_count = int(row.failed_count or 0)
+            if invalid_attempts > 0:
+                risk = "critical"
+            elif duplicate_attempts > 0:
+                risk = "watch"
+            elif failed_count > 0:
+                risk = "elevated"
+            else:
+                risk = "healthy"
+
+            data.append(
+                AdminRedemptionRow(
+                    wallet_pass_id=row.wallet_pass_id,
+                    deal_title=row.deal_title,
+                    practitioner_name=row.practitioner_name,
+                    attendee_email=row.attendee_email,
+                    success_count=int(row.success_count or 0),
+                    failed_count=failed_count,
+                    duplicate_attempts=duplicate_attempts,
+                    invalid_attempts=invalid_attempts,
+                    last_event_at=row.last_event_at,
+                    risk_level=risk,
+                )
+            )
+        return data
+
+    async def list_timeline(
+        self,
+        *,
+        entity_type: str,
+        entity_id: str,
+        limit: int = 80,
+    ) -> list[AdminTimelineEventRow]:
+        entity_pairs: list[tuple[str, str]] = [(entity_type, entity_id)]
+
+        if entity_type == "booking":
+            try:
+                booking_uuid = UUID(entity_id)
+            except ValueError:
+                booking_uuid = None
+            booking = await self.session.get(Booking, booking_uuid) if booking_uuid else None
+            if booking and booking.wallet_pass_id:
+                pass_id = str(booking.wallet_pass_id)
+                entity_pairs.append(("wallet_pass", pass_id))
+                entity_pairs.append(("redemption", pass_id))
+        elif entity_type == "wallet_pass":
+            try:
+                wallet_uuid = UUID(entity_id)
+            except ValueError:
+                wallet_uuid = None
+            wallet_pass = await self.session.get(WalletPass, wallet_uuid) if wallet_uuid else None
+            if wallet_pass and wallet_pass.booking_id:
+                entity_pairs.append(("booking", str(wallet_pass.booking_id)))
+            entity_pairs.append(("redemption", entity_id))
+        elif entity_type == "redemption":
+            entity_pairs.append(("wallet_pass", entity_id))
+
+        filters = [
+            (ActivityEvent.entity_type == pair_type) & (ActivityEvent.entity_id == pair_id)
+            for pair_type, pair_id in entity_pairs
+        ]
+        stmt = (
+            select(ActivityEvent)
+            .where(or_(*filters))
+            .order_by(ActivityEvent.created_at.desc(), ActivityEvent.id.desc())
+            .limit(max(1, min(limit, 200)))
+        )
+        rows = (await self.session.execute(stmt)).scalars().all()
+        return [
+            AdminTimelineEventRow(
+                id=row.id,
+                entity_type=row.entity_type,
+                entity_id=row.entity_id,
+                event_type=row.event_type,
+                metadata=row.event_metadata or {},
+                created_at=row.created_at,
+            )
+            for row in rows
+        ]

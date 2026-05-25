@@ -54,3 +54,55 @@ class AdminPayoutRow(BaseModel):
 
 class AdminPayoutActionRequest(BaseModel):
     action: str
+
+
+class AdminBookingRow(BaseModel):
+    id: UUID
+    booking_number: str
+    deal_title: str
+    practitioner_name: str
+    customer_name: str | None
+    customer_email: str
+    quantity: int
+    total_amount: Decimal
+    currency: str
+    payment_status: str
+    redemption_status: str
+    wallet_pass_id: UUID | None
+    created_at: datetime
+
+
+class AdminWalletPassRow(BaseModel):
+    id: UUID
+    deal_title: str
+    practitioner_name: str
+    attendee_email: str | None
+    booking_number: str | None
+    pass_status: str
+    redemption_status: str
+    wallet_type: str
+    source_checkout_session_id: str | None
+    qr_code: str
+    created_at: datetime
+
+
+class AdminRedemptionRow(BaseModel):
+    wallet_pass_id: str
+    deal_title: str | None
+    practitioner_name: str | None
+    attendee_email: str | None
+    success_count: int
+    failed_count: int
+    duplicate_attempts: int
+    invalid_attempts: int
+    last_event_at: datetime
+    risk_level: str
+
+
+class AdminTimelineEventRow(BaseModel):
+    id: UUID
+    entity_type: str
+    entity_id: str
+    event_type: str
+    metadata: dict
+    created_at: datetime

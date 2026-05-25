@@ -15,7 +15,7 @@ from app.models import Booking, Customer, WalletPass
 from app.repositories.deal_card_repository import DealCardRepository
 from app.repositories.practitioner_repository import PractitionerRepository
 from app.repositories.wallet_pass_repository import WalletPassRepository
-from app.schemas.payment import CheckoutSessionCreateRequest, CheckoutSessionCreateResponse
+from app.schemas.payment import CheckoutSessionCreateRequest, CheckoutSessionCreateResponse, CheckoutSessionResultResponse
 from app.services.activity_pipeline import emit_activity_event
 from app.services.mail_service import MailService
 
@@ -212,9 +212,16 @@ class PaymentService:
         amount_cents = int(deal.price * 100)
 
         try:
+            success_url = self._append_query(
+                payload.success_url,
+                {
+                    "checkout": "success",
+                    "session_id": "{CHECKOUT_SESSION_ID}",
+                },
+            )
             session = stripe.checkout.Session.create(
                 mode="payment",
-                success_url=payload.success_url,
+                success_url=success_url,
                 cancel_url=payload.cancel_url,
                 customer_email=customer.email,
                 line_items=[
@@ -251,6 +258,29 @@ class PaymentService:
         return CheckoutSessionCreateResponse(
             checkout_session_id=session.id,
             checkout_url=session.url,
+        )
+
+    async def get_checkout_result(self, checkout_session_id: str) -> CheckoutSessionResultResponse:
+        wallet_pass = await self.wallet_repo.get_by_checkout_session_id(checkout_session_id)
+        if not wallet_pass:
+            return CheckoutSessionResultResponse(
+                checkout_session_id=checkout_session_id,
+                status="pending",
+            )
+
+        booking = await self.session.get(Booking, wallet_pass.booking_id) if wallet_pass.booking_id else None
+        pass_url = wallet_pass.apple_wallet_url or wallet_pass.google_wallet_url
+
+        return CheckoutSessionResultResponse(
+            checkout_session_id=checkout_session_id,
+            status="ready",
+            wallet_pass_id=wallet_pass.id,
+            booking_id=wallet_pass.booking_id,
+            booking_number=booking.booking_number if booking else None,
+            qr_code=wallet_pass.qr_code,
+            apple_wallet_url=wallet_pass.apple_wallet_url,
+            google_wallet_url=wallet_pass.google_wallet_url,
+            pass_url=pass_url,
         )
 
     async def handle_webhook_event(self, payload: bytes, signature: str | None) -> dict[str, bool]:
