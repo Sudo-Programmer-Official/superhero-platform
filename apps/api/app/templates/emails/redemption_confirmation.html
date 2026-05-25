@@ -1,7 +1,29 @@
-<!doctype html><html><body style="margin:0;background:#070d1c;color:#e8eef8;font-family:Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px;">
-<table width="620" style="max-width:100%;background:#0f1b33;border:1px solid #1f3259;border-radius:14px;padding:20px;">
-<tr><td><h2 style="margin:0 0 10px;color:#52d58b;">Pass Redeemed</h2>
-<p style="margin:0 0 10px;">Hi $customer_name, your pass for <strong>$deal_title</strong> was redeemed.</p>
-<p style="margin:0;">Redeemed at: $redeemed_at</p>
-</td></tr></table></td></tr></table></body></html>
+<!doctype html>
+<html>
+  <body style="margin:0;background:#040b18;color:#e8eef8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#040b18;">
+      <tr><td align="center" style="padding:24px 16px;">
+        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;border-radius:22px;overflow:hidden;border:1px solid #1d3157;background:#081327;">
+          <tr><td style="padding:20px 24px;background:linear-gradient(130deg,#0f2a54,#10203b 58%,#163326);">
+            <p style="margin:0;color:#93e8b7;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">OpenMat Check-in</p>
+            <h1 style="margin:10px 0 0;color:#f8fbff;font-size:30px;line-height:1.1;">Pass redeemed</h1>
+            <p style="margin:10px 0 0;color:#cddbf1;font-size:16px;line-height:1.5;">$customer_name, your check-in for <strong>$deal_title</strong> is complete.</p>
+          </td></tr>
+          <tr><td style="padding:24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #2a4169;border-radius:16px;background:#0c1a31;">
+              <tr><td style="padding:18px;color:#f8fbff;">
+                <p style="margin:0 0 10px;"><span style="display:inline-block;min-width:120px;color:#9eb3d4;">Experience</span> $deal_title</p>
+                <p style="margin:0;"><span style="display:inline-block;min-width:120px;color:#9eb3d4;">Redeemed at</span> $redeemed_at_pretty</p>
+              </td></tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:20px;">
+              <tr><td style="padding:0 0 10px;"><a href="$view_booking_url" style="display:block;text-align:center;background:#f2cb7f;color:#1f1400;text-decoration:none;border-radius:12px;padding:14px 18px;font-weight:700;">View booking</a></td></tr>
+              <tr><td><a href="$support_url" style="display:block;text-align:center;background:#102340;color:#dce9fb;text-decoration:none;border-radius:12px;padding:13px 10px;border:1px solid #2d466f;font-weight:600;">Contact support</a></td></tr>
+            </table>
+          </td></tr>
+          <tr><td style="border-top:1px solid #1d3157;padding:14px 24px 18px;color:#8ea3c5;font-size:12px;line-height:1.5;">Powered by OpenMat · Secure booking support: hello@openmat.app</td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>

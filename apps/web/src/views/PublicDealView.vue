@@ -110,19 +110,19 @@
         <button
           class="mobile-cta-btn"
           type="button"
-          :disabled="deal.status !== 'published' || checkoutState === 'processing'"
+          :disabled="deal.status !== 'published' || isCheckoutBusy"
           @click="mobileSheetOpen = true"
         >
-          {{ checkoutState === "processing" ? "Reserving your spot..." : "Reserve Spot" }}
+          {{ isCheckoutBusy ? "Reserving your spot..." : "Reserve Spot" }}
         </button>
       </div>
 
-      <div v-if="mobileSheetOpen" class="sheet-backdrop" @click.self="mobileSheetOpen = false">
+      <div v-if="mobileSheetOpen" class="sheet-backdrop" @click.self="!isCheckoutBusy && (mobileSheetOpen = false)">
         <section class="mobile-sheet" role="dialog" aria-modal="true" aria-label="Checkout">
           <div class="sheet-handle"></div>
           <div class="sheet-head">
             <h2>Checkout</h2>
-            <button class="sheet-close" type="button" @click="mobileSheetOpen = false">Close</button>
+            <button class="sheet-close" type="button" :disabled="isCheckoutBusy" @click="mobileSheetOpen = false">Close</button>
           </div>
           <div class="sheet-content">
             <CheckoutPanelContent />
@@ -130,23 +130,9 @@
         </section>
       </div>
 
-      <AppCard v-if="isSuccessState" class="success-card">
-        <h2>Booking confirmed</h2>
-        <p class="copy">Your reservation is secured and confirmation is on its way.</p>
-        <div class="success-grid">
-          <p v-if="checkoutBookingNumber">Booking #{{ checkoutBookingNumber }}</p>
-          <p>Confirmation email sent</p>
-          <p>Wallet pass generated</p>
-          <p>QR code ready for entry</p>
-        </div>
-        <div class="success-actions">
-          <button type="button" class="success-btn" @click="openPass">View Pass</button>
-          <button type="button" class="success-btn" @click="downloadQr">Download QR</button>
-          <button type="button" class="success-btn is-secondary" @click="goHome">Return Home</button>
-        </div>
-      </AppCard>
     </template>
     </div>
+
   </section>
 </template>
 
@@ -156,7 +142,7 @@ import { useRoute, useRouter } from "vue-router";
 import AppButton from "../design-system/primitives/AppButton.vue";
 import AppCard from "../design-system/primitives/AppCard.vue";
 import { calculateCheckoutTotals, formatLocalDateTime, formatMoney, formatTimezone, getStatusLabel } from "../domain/deal";
-import { createCheckoutSession, fetchCheckoutResult, fetchPublicDeal, type DealCardPayload } from "../services/api";
+import { createCheckoutSession, fetchPublicDeal, type DealCardPayload } from "../services/api";
 import { showToast } from "../stores/toast";
 
 type CheckoutState = "idle" | "processing" | "success" | "failed";
@@ -174,10 +160,6 @@ const reserveSeconds = ref(9 * 60);
 const formError = ref("");
 const mobileSheetOpen = ref(false);
 const viewportWidth = ref(typeof window !== "undefined" ? window.innerWidth : 1280);
-const checkoutSessionId = ref("");
-const walletPassUrl = ref<string | null>(null);
-const checkoutQrCode = ref<string | null>(null);
-const checkoutBookingNumber = ref<string | null>(null);
 const checkoutForm = ref({
   name: "",
   email: "",
@@ -186,7 +168,7 @@ const checkoutForm = ref({
 let reserveTimer: number | null = null;
 
 const isMobileViewport = computed(() => viewportWidth.value <= 767);
-const isSuccessState = computed(() => checkoutState.value === "success" && String(route.query.checkout || "") === "success");
+const isCheckoutBusy = computed(() => checkoutState.value === "processing");
 const maxQuantity = computed(() => Math.max(1, Math.min(8, deal.value?.remaining_slots || 1)));
 const checkoutTotals = computed(() => {
   if (!deal.value) return null;
@@ -258,49 +240,6 @@ function onViewportResize() {
   }
 }
 
-async function syncCheckoutArtifacts(sessionId: string) {
-  let attempts = 0;
-  while (attempts < 8) {
-    attempts += 1;
-    const result = await fetchCheckoutResult(sessionId);
-    if (result.status === "ready") {
-      walletPassUrl.value = result.pass_url;
-      checkoutQrCode.value = result.qr_code;
-      checkoutBookingNumber.value = result.booking_number;
-      return;
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 1500));
-  }
-}
-
-function openPass() {
-  if (walletPassUrl.value) {
-    window.open(walletPassUrl.value, "_blank", "noopener,noreferrer");
-    return;
-  }
-  showToast("Pass link will appear as soon as issuance completes.", "loading", 2200);
-}
-
-function downloadQr() {
-  if (checkoutQrCode.value) {
-    const blob = new Blob([checkoutQrCode.value], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `openmat-qr-${checkoutBookingNumber.value || "booking"}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    return;
-  }
-  showToast("QR is being prepared. Check your email shortly.", "loading", 2200);
-}
-
-function goHome() {
-  router.push(`/openmat/${String(route.params.practitionerSlug || "")}`);
-}
-
 async function load() {
   const practitionerSlug = String(route.params.practitionerSlug || "");
   const dealSlug = String(route.params.dealSlug || "");
@@ -311,30 +250,18 @@ async function load() {
   }
 
   try {
+    if (String(route.query.checkout || "") === "success") {
+      await router.replace({
+        name: "public-deal-success",
+        params: { practitionerSlug, dealSlug },
+        query: route.query
+      });
+      return;
+    }
     deal.value = await fetchPublicDeal(practitionerSlug, dealSlug);
     quantity.value = 1;
     const checkoutQuery = String(route.query.checkout || "");
-    if (checkoutQuery === "success") {
-      checkoutNotice.value = "Payment completed successfully. Your pass will be issued shortly.";
-      checkoutNoticeTone.value = "ok";
-      checkoutState.value = "success";
-      checkoutSessionId.value = String(route.query.session_id || "");
-      if (checkoutSessionId.value) {
-        try {
-          await syncCheckoutArtifacts(checkoutSessionId.value);
-        } catch {
-          // Do not fail page load if pass issuance is still propagating.
-        }
-      }
-      const handoffPayload = {
-        at: new Date().toISOString(),
-        dealId: deal.value.id,
-        dealSlug,
-        email: checkoutForm.value.email || null,
-        session_id: checkoutSessionId.value || null
-      };
-      window.localStorage.setItem("openmat:last-checkout-success", JSON.stringify(handoffPayload));
-    } else if (checkoutQuery === "cancel") {
+    if (checkoutQuery === "cancel") {
       checkoutNotice.value = "Checkout was cancelled. You can retry any time.";
       checkoutNoticeTone.value = "error";
       checkoutState.value = "idle";
@@ -377,11 +304,21 @@ async function onCheckout() {
       customer_email: checkoutForm.value.email,
       customer_name: `${checkoutForm.value.name} x${quantity.value}`,
       quantity: quantity.value,
-      success_url: `${window.location.origin}${window.location.pathname}?checkout=success`,
+      success_url: `${window.location.origin}/openmat/${String(route.params.practitionerSlug || "")}/${String(route.params.dealSlug || "")}/booking-confirmed?checkout=success`,
       cancel_url: `${window.location.origin}${window.location.pathname}?checkout=cancel`
     });
 
     checkoutState.value = "success";
+    window.localStorage.setItem(
+      "openmat:last-checkout-success",
+      JSON.stringify({
+        at: new Date().toISOString(),
+        dealId: deal.value.id,
+        dealSlug: String(route.params.dealSlug || ""),
+        email: checkoutForm.value.email || null,
+        name: checkoutForm.value.name || null
+      })
+    );
     showToast("Redirecting to payment...", "loading", 1800);
     window.location.href = res.checkout_url;
   } catch (err) {
@@ -490,6 +427,11 @@ watch(quantity, () => {
   }
 });
 
+watch(mobileSheetOpen, (open) => {
+  if (typeof document === "undefined") return;
+  document.body.style.overflow = open ? "hidden" : "";
+});
+
 onMounted(async () => {
   await load();
   startReservationTimer();
@@ -502,6 +444,9 @@ onBeforeUnmount(() => {
     reserveTimer = null;
   }
   window.removeEventListener("resize", onViewportResize);
+  if (typeof document !== "undefined") {
+    document.body.style.overflow = "";
+  }
 });
 </script>
 
@@ -582,6 +527,7 @@ h3 { margin: 0 0 8px; font-size: 20px; }
 .proof-row span { font-size: 12px; color: rgba(255,255,255,.74); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; }
 .checkout-card { position: sticky; top: 24px; width: 100%; min-width: 400px; max-width: 440px; justify-self: end; flex-shrink: 0; }
 .public-deal :deep(.checkout-shell) { display: grid; gap: 16px; min-width: 0; width: 100%; }
+.public-deal :deep(.checkout-shell) * { box-sizing: border-box; }
 .public-deal :deep(.checkout-price) { display: flex; justify-content: space-between; align-items: baseline; }
 .public-deal :deep(.checkout-price-value) { margin: 0; font-size: 36px; font-weight: 700; color: #f6dfb2; }
 .public-deal :deep(.checkout-price-sub) { margin: 0; color: rgba(255,255,255,.68); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
@@ -594,6 +540,7 @@ h3 { margin: 0 0 8px; font-size: 20px; }
 .public-deal :deep(.qty-btn:disabled) { opacity: .45; }
 .public-deal :deep(.qty-value) { min-width: 34px; text-align: center; font-size: 22px; font-weight: 600; }
 .public-deal :deep(.reserve-pill) { border-radius: 999px; border: 1px solid rgba(113,182,255,.35); background: rgba(113,182,255,.12); color: #a7d5ff; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 8px 12px; width: fit-content; }
+.public-deal :deep(.reserve-pill) { min-height: 34px; display: inline-flex; align-items: center; }
 .public-deal :deep(.reserve-pill.is-warning) { border-color: rgba(255,170,120,.55); color: #f4d8a7; background: rgba(240,190,100,.14); box-shadow: 0 0 22px rgba(240,190,100,.24); animation: timerPulse 1.8s ease-in-out infinite; }
 @keyframes timerPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.015); } }
 .public-deal :deep(.checkout-fields) { display: grid !important; grid-template-columns: 1fr !important; gap: 15px !important; min-width: 0; width: 100%; }
@@ -606,26 +553,154 @@ h3 { margin: 0 0 8px; font-size: 20px; }
 .public-deal :deep(.summary-wrap) { border-top: 1px solid rgba(255,255,255,.08); padding-top: 12px; }
 .public-deal :deep(.summary) { display: grid; gap: 8px; }
 .public-deal :deep(.summary div) { display: flex; align-items: center; justify-content: space-between; color: rgba(255,255,255,.74); }
+.public-deal :deep(.summary span) { padding-right: 12px; }
 .public-deal :deep(.summary strong) { color: #ecf2fb; }
+.public-deal :deep(.summary strong) { min-width: 92px; text-align: right; font-variant-numeric: tabular-nums; }
 .public-deal :deep(.summary .total) { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 10px; color: #f4d8a7; font-size: 18px; }
 .public-deal :deep(.action-wrap) { display: grid; gap: 12px; }
 .public-deal :deep(.checkout-btn) { width: 100%; min-height: 52px; }
 .public-deal :deep(.checkout-btn:hover) { filter: brightness(1.06); }
 .public-deal :deep(.status-row) { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.public-deal :deep(.status-row) { min-height: 28px; }
 .public-deal :deep(.status-chip) { border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.04); color: rgba(255,255,255,.78); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 6px 10px; }
 .public-deal :deep(.status-chip.is-processing) { border-color: rgba(113,182,255,.55); color: #9fd0ff; }
 .public-deal :deep(.status-chip.is-success) { border-color: rgba(82,213,139,.58); color: #52d58b; }
 .public-deal :deep(.status-chip.is-failed) { border-color: rgba(255,110,110,.55); color: #ffb2b2; }
 .public-deal :deep(.status-copy) { color: rgba(255,255,255,.62); font-size: 12px; text-align: right; }
-.success-card { border: 1px solid rgba(82,213,139,.36); background: linear-gradient(145deg, rgba(82,213,139,.09), rgba(16,34,26,.9)); }
-.success-grid { margin-top: 10px; display: grid; gap: 8px; }
-.success-grid p { margin: 0; color: rgba(223, 255, 236, 0.92); }
-.success-actions { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+.success-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(3, 9, 20, 0.62);
+  backdrop-filter: blur(12px);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  animation: fadeIn 220ms ease-out both;
+}
+.success-overlay {
+  width: min(100%, 720px);
+  max-height: min(88dvh, 920px);
+  overflow: auto;
+  border-radius: 28px;
+  border: 1px solid rgba(120, 226, 168, 0.34);
+  background:
+    radial-gradient(620px 220px at 50% -10%, rgba(82, 213, 139, 0.16), transparent 56%),
+    linear-gradient(165deg, rgba(12, 30, 24, 0.96), rgba(7, 16, 33, 0.98));
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.5);
+  padding: 32px;
+  display: grid;
+  gap: 20px;
+  animation: successPop 260ms cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes successPop {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.success-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.success-check {
+  width: 62px;
+  height: 62px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  font-weight: 800;
+  color: #cbffe2;
+  border: 1px solid rgba(122, 246, 182, 0.54);
+  background: radial-gradient(60% 60% at 45% 35%, rgba(148, 255, 199, 0.28), rgba(69, 172, 114, 0.18));
+  box-shadow: 0 0 32px rgba(124, 255, 188, 0.28);
+  animation: successPulse 2.2s ease-in-out infinite;
+}
+@keyframes successPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(124, 255, 188, 0.22); }
+  50% { box-shadow: 0 0 38px rgba(124, 255, 188, 0.35); }
+}
+.success-close {
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.06);
+  color: #d9e7f8;
+  border-radius: 11px;
+  padding: 8px 11px;
+}
+.success-badge {
+  margin: 0;
+  width: fit-content;
+  border: 1px solid rgba(122, 246, 182, 0.44);
+  background: rgba(122, 246, 182, 0.12);
+  color: #d8ffe8;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.success-title {
+  margin: 0;
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+.success-sub {
+  margin: 0;
+  color: rgba(228, 239, 250, 0.78);
+  line-height: 1.6;
+}
+.success-details {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 18px;
+  background: rgba(7, 19, 35, 0.52);
+  padding: 18px;
+}
+.success-details p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.success-details span {
+  color: rgba(217, 230, 244, 0.66);
+}
+.success-details strong {
+  color: #eef5ff;
+  text-align: right;
+}
+.success-next {
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 18px;
+  background: rgba(6, 14, 26, 0.54);
+  padding: 18px;
+}
+.success-next-title {
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+.success-next ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 7px;
+  color: rgba(223, 235, 248, 0.84);
+}
+.success-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
 .success-btn {
   border: 1px solid rgba(82,213,139,.5);
   background: rgba(82,213,139,.14);
   color: #d9ffe9;
   border-radius: 12px;
+  min-height: 52px;
   padding: 10px 12px;
   font-weight: 600;
   transition: transform 160ms ease, background 160ms ease;
@@ -660,7 +735,7 @@ h3 { margin: 0 0 8px; font-size: 20px; }
 .sheet-content {
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 4px 2px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 4px 2px calc(96px + env(safe-area-inset-bottom, 0px));
 }
 .sheet-handle { width: 56px; height: 5px; border-radius: 999px; background: rgba(255,255,255,.24); margin: 0 auto 10px; }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -674,12 +749,16 @@ h3 { margin: 0 0 8px; font-size: 20px; }
   max-width: 100% !important;
 }
 .mobile-sheet .summary-wrap {
-  position: static;
+  position: sticky;
+  bottom: 78px;
+  z-index: 2;
   background: linear-gradient(180deg, rgba(9,20,38,0.2), rgba(9,20,38,0.95) 36%);
   padding-top: 14px;
 }
 .mobile-sheet .action-wrap {
-  position: static;
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
   background: linear-gradient(180deg, rgba(9,20,38,0.18), rgba(9,20,38,0.98) 34%);
   padding-top: 10px;
   padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
@@ -797,6 +876,25 @@ h3 { margin: 0 0 8px; font-size: 20px; }
   .mobile-cta-price { font-size: 20px; }
   .mobile-cta-btn { padding: 10px 12px; font-size: 14px; }
   .sheet-head h2 { font-size: 28px; }
+  .success-overlay {
+    width: 100%;
+    height: min(96dvh, 960px);
+    max-height: 96dvh;
+    border-radius: 24px 24px 0 0;
+    align-self: end;
+    padding: 24px;
+    gap: 18px;
+  }
+  .success-actions {
+    position: sticky;
+    bottom: 0;
+    grid-template-columns: 1fr;
+    background: linear-gradient(180deg, rgba(9,20,38,0.12), rgba(9,20,38,0.94) 42%);
+    padding-top: 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .success-details p { display: grid; gap: 2px; }
+  .success-details strong { text-align: left; }
 }
 @media (max-width: 390px) {
   .page-shell { padding-inline: 12px; }

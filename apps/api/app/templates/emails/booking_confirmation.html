@@ -1,9 +1,63 @@
-<!doctype html><html><body style="margin:0;background:#070d1c;color:#e8eef8;font-family:Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px;">
-<table width="620" style="max-width:100%;background:#0f1b33;border:1px solid #1f3259;border-radius:14px;padding:20px;">
-<tr><td><h2 style="margin:0 0 8px;color:#f4d8a7;">Booking Confirmed</h2><p style="margin:0 0 16px;">Hi $customer_name, your booking is confirmed.</p>
-<p style="margin:0 0 6px;"><strong>Experience:</strong> $deal_title</p>
-<p style="margin:0 0 6px;"><strong>Date:</strong> $starts_at</p>
-<p style="margin:0 0 6px;"><strong>Location:</strong> $location</p>
-<p style="margin:0;"><strong>Booking #:</strong> $booking_number</p>
-</td></tr></table></td></tr></table></body></html>
+<!doctype html>
+<html>
+  <body style="margin:0;background:#040b18;color:#e8eef8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#040b18;">
+      <tr>
+        <td align="center" style="padding:24px 16px;">
+          <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;border-radius:22px;overflow:hidden;border:1px solid #1d3157;background:#081327;">
+            <tr>
+              <td style="padding:20px 24px;background:linear-gradient(130deg,#0f2a54,#10203b 58%,#251e15);">
+                <p style="margin:0;color:#f3d89f;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">OpenMat</p>
+                <h1 style="margin:10px 0 0;color:#f8fbff;font-size:30px;line-height:1.1;">Booking confirmed</h1>
+                <p style="margin:10px 0 0;color:#cddbf1;font-size:16px;line-height:1.5;">Your reservation for <strong>$deal_title</strong> is secured. We are excited to host you.</p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:24px;">
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #2a4169;border-radius:16px;background:#0c1a31;">
+                  <tr>
+                    <td style="padding:18px 18px 8px;color:#d5e3f7;font-size:13px;text-transform:uppercase;letter-spacing:.08em;">Booking details</td>
+                  </tr>
+                  <tr><td style="padding:0 18px 16px;">
+                    <p style="margin:0 0 10px;color:#f8fbff;"><span style="display:inline-block;min-width:130px;color:#9eb3d4;">Guest</span> $customer_name</p>
+                    <p style="margin:0 0 10px;color:#f8fbff;"><span style="display:inline-block;min-width:130px;color:#9eb3d4;">Experience</span> $deal_title</p>
+                    <p style="margin:0 0 10px;color:#f8fbff;"><span style="display:inline-block;min-width:130px;color:#9eb3d4;">Date & time</span> $starts_at_pretty</p>
+                    <p style="margin:0 0 10px;color:#f8fbff;"><span style="display:inline-block;min-width:130px;color:#9eb3d4;">Location</span> $location</p>
+                    <p style="margin:0;color:#f8fbff;"><span style="display:inline-block;min-width:130px;color:#9eb3d4;">Booking number</span> <strong>$booking_number</strong></p>
+                  </td></tr>
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:20px;">
+                  <tr>
+                    <td style="padding:0 0 10px;">
+                      <a href="$manage_booking_url" style="display:block;text-align:center;background:#f2cb7f;color:#1f1400;text-decoration:none;border-radius:12px;padding:14px 18px;font-weight:700;">Manage booking</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                        <tr>
+                          <td style="padding-right:6px;"><a href="$view_details_url" style="display:block;text-align:center;background:#102340;color:#dce9fb;text-decoration:none;border-radius:12px;padding:13px 10px;border:1px solid #2d466f;font-weight:600;">View details</a></td>
+                          <td style="padding-left:6px;"><a href="$contact_host_url" style="display:block;text-align:center;background:#102340;color:#dce9fb;text-decoration:none;border-radius:12px;padding:13px 10px;border:1px solid #2d466f;font-weight:600;">Contact host</a></td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:20px 0 0;color:#9db1d1;font-size:13px;line-height:1.5;">Need help? Reply to this email. Your check-in QR pass is sent separately and should be ready right away.</p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="border-top:1px solid #1d3157;padding:14px 24px 18px;color:#8ea3c5;font-size:12px;line-height:1.5;">
+                Secure booking by OpenMat · hello@openmat.app
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -1,5 +1,18 @@
+Your OpenMat pass is ready — $deal_title
+
 Hi $customer_name,
 
-Your pass for $deal_title is ready.
-Present this code at check-in:
+Your entry pass is ready for check-in.
+Show this QR code at entry.
+
+Fallback code
 $qr_code
+
+Open pass: $view_pass_url
+Download QR: $download_qr_url
+Open booking: $open_booking_url
+
+If images are blocked in your email app, use the fallback code above.
+
+OpenMat Support
+hello@openmat.app

@@ -1,4 +1,14 @@
+Pass redeemed — $deal_title
+
 Hi $customer_name,
 
-Your pass for $deal_title was redeemed.
-Redeemed at: $redeemed_at
+Your check-in is complete.
+
+Experience: $deal_title
+Redeemed at: $redeemed_at_pretty
+
+View booking: $view_booking_url
+Support: $support_url
+
+OpenMat Support
+hello@openmat.app

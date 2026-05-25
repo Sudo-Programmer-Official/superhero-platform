@@ -1,4 +1,15 @@
-Hi $practitioner_name,
+Welcome to OpenMat, $practitioner_name
 
-Welcome to OpenMat. Your studio is ready.
-Create your first deal to start accepting bookings.
+Your studio profile is ready.
+
+Next steps:
+1. Create your first deal
+2. Set date, capacity, and pricing
+3. Share your public booking page
+
+Create deal: $create_deal_url
+Open dashboard: $dashboard_url
+Support: $support_url
+
+OpenMat Support
+hello@openmat.app

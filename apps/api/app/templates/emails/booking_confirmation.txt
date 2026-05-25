@@ -1,10 +1,21 @@
+Booking confirmed — $deal_title
+
 Hi $customer_name,
 
-Your booking is confirmed.
+Your reservation is secured.
 
-Experience: $deal_title
-Date: $starts_at
-Location: $location
-Booking #: $booking_number
+Booking details
+- Experience: $deal_title
+- Date & time: $starts_at_pretty
+- Location: $location
+- Booking number: $booking_number
 
-Please present your QR pass at check-in.
+Next steps
+- Manage booking: $manage_booking_url
+- View details: $view_details_url
+- Contact host: $contact_host_url
+
+Need help? Reply to this email.
+
+OpenMat Support
+hello@openmat.app

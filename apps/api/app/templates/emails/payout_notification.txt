@@ -1,3 +1,10 @@
-Your payout was processed.
+Payout processed
+
 Amount: $amount
-Payout date: $payout_date
+Payout date: $payout_date_pretty
+
+Open dashboard: $dashboard_url
+Support: $support_url
+
+OpenMat Support
+hello@openmat.app

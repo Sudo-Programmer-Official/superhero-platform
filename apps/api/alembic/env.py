@@ -41,8 +41,9 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        connection.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{settings.db_schema}"'))
-        connection.execute(text(f'SET search_path TO "{settings.db_schema}"'))
+        # Ensure schema DDL is committed before Alembic migration transaction begins.
+        with connection.begin():
+            connection.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{settings.db_schema}"'))
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
@@ -51,6 +52,7 @@ def run_migrations_online() -> None:
         )
 
         with context.begin_transaction():
+            connection.execute(text(f'SET LOCAL search_path TO "{settings.db_schema}"'))
             context.run_migrations()
 
 

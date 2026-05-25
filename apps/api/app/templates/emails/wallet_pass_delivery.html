@@ -1,8 +1,65 @@
-<!doctype html><html><body style="margin:0;background:#070d1c;color:#e8eef8;font-family:Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px;">
-<table width="620" style="max-width:100%;background:#0f1b33;border:1px solid #1f3259;border-radius:14px;padding:20px;">
-<tr><td><h2 style="margin:0 0 10px;color:#f4d8a7;">Wallet Pass Ready</h2>
-<p style="margin:0 0 10px;">Hi $customer_name, your pass for <strong>$deal_title</strong> is ready.</p>
-<p style="margin:0 0 10px;">Present this code at check-in:</p>
-<p style="margin:0;padding:10px;border:1px solid #2f4c7f;border-radius:10px;background:#0a152b;font-family:monospace;">$qr_code</p>
-</td></tr></table></td></tr></table></body></html>
+<!doctype html>
+<html>
+  <body style="margin:0;background:#040b18;color:#e8eef8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#040b18;">
+      <tr>
+        <td align="center" style="padding:24px 16px;">
+          <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;border-radius:22px;overflow:hidden;border:1px solid #1d3157;background:#081327;">
+            <tr>
+              <td style="padding:20px 24px;background:linear-gradient(130deg,#0f2a54,#10203b 58%,#251e15);">
+                <p style="margin:0;color:#f3d89f;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">OpenMat Pass</p>
+                <h1 style="margin:10px 0 0;color:#f8fbff;font-size:30px;line-height:1.1;">Your pass is ready</h1>
+                <p style="margin:10px 0 0;color:#cddbf1;font-size:16px;line-height:1.5;">$customer_name, your entry pass for <strong>$deal_title</strong> is ready for check-in.</p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:24px;">
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border:1px solid #2a4169;border-radius:16px;background:#0c1a31;">
+                  <tr>
+                    <td align="center" style="padding:20px 16px 10px;">
+                      <img src="$qr_image_url" alt="OpenMat entry QR code" width="220" height="220" style="display:block;width:220px;max-width:100%;height:auto;border-radius:14px;background:#ffffff;padding:10px;" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" style="padding:2px 20px 18px;">
+                      <p style="margin:0;color:#d8e6fa;font-size:14px;line-height:1.5;">Show this QR at check-in for fast entry.</p>
+                      <p style="margin:12px 0 0;color:#9cb2d4;font-size:12px;">Fallback code</p>
+                      <p style="margin:6px 0 0;padding:10px 12px;border-radius:10px;border:1px solid #355381;background:#071325;color:#eaf2ff;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;word-break:break-all;">$qr_code</p>
+                    </td>
+                  </tr>
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:20px;">
+                  <tr>
+                    <td style="padding:0 0 10px;">
+                      <a href="$view_pass_url" style="display:block;text-align:center;background:#f2cb7f;color:#1f1400;text-decoration:none;border-radius:12px;padding:14px 18px;font-weight:700;">View pass</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                        <tr>
+                          <td style="padding-right:6px;"><a href="$download_qr_url" style="display:block;text-align:center;background:#102340;color:#dce9fb;text-decoration:none;border-radius:12px;padding:13px 10px;border:1px solid #2d466f;font-weight:600;">Download QR</a></td>
+                          <td style="padding-left:6px;"><a href="$open_booking_url" style="display:block;text-align:center;background:#102340;color:#dce9fb;text-decoration:none;border-radius:12px;padding:13px 10px;border:1px solid #2d466f;font-weight:600;">Open booking</a></td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:20px 0 0;color:#9db1d1;font-size:13px;line-height:1.5;">If images are blocked by your email app, use the fallback code at entry or open your booking page from the button above.</p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="border-top:1px solid #1d3157;padding:14px 24px 18px;color:#8ea3c5;font-size:12px;line-height:1.5;">
+                Powered by OpenMat · Secure booking support: hello@openmat.app
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
