@@ -77,6 +77,10 @@ class S3StorageService:
         if not object_key.startswith(f"{self.prefix}/"):
             raise ValueError("Object key is outside project prefix")
 
+    def object_public_url(self, object_key: str) -> str:
+        key = object_key.lstrip("/")
+        return f"https://{self.bucket}.s3.{self.region}.amazonaws.com/{key}"
+
     def create_presigned_upload(
         self, *, folder: str, owner_id: str, filename: str, content_type: str, content_length: int
     ) -> PresignedUpload:
@@ -102,4 +106,13 @@ class S3StorageService:
             content_type=content_type,
             expires_in=settings.s3_presign_expires_seconds,
             max_content_length=max_bytes,
+        )
+
+    def upload_bytes(self, *, object_key: str, body: bytes, content_type: str) -> None:
+        self._client.put_object(
+            Bucket=self.bucket,
+            Key=object_key,
+            Body=body,
+            ContentType=content_type,
+            ServerSideEncryption="AES256",
         )

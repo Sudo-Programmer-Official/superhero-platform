@@ -78,6 +78,12 @@ export type FinalizeAssetRequest = {
   object_key: string;
 };
 
+export type UploadPractitionerImageResponse = {
+  object_key: string;
+  avatar_url: string;
+  profile_image: string;
+};
+
 export type DealCardCreatePayload = {
   practitioner_id: string;
   title: string;
@@ -342,6 +348,31 @@ export async function finalizeAsset(token: string, payload: FinalizeAssetRequest
     body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error(`Failed finalize asset: ${res.status}`);
+}
+
+export async function uploadPractitionerImage(
+  token: string,
+  practitionerId: string,
+  file: File
+): Promise<UploadPractitionerImageResponse> {
+  const formData = new FormData();
+  formData.set("practitioner_id", practitionerId);
+  formData.set("file", file);
+
+  const trimmed = token?.trim();
+  if (!trimmed) {
+    throw new Error("Authentication session expired.");
+  }
+
+  const res = await fetch(`${API_BASE}/api/v1/storage/upload-practitioner-image`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${trimmed}`,
+    },
+    body: formData
+  });
+  if (!res.ok) throw new Error(`Failed practitioner image upload: ${res.status}`);
+  return res.json() as Promise<UploadPractitionerImageResponse>;
 }
 
 export async function createCheckoutSession(

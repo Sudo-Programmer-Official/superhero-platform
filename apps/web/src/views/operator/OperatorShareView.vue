@@ -102,11 +102,9 @@ import { useRouter } from "vue-router";
 import { formatLocalDateTime, formatMoney } from "../../domain/deal";
 import {
   fetchPublicPractitioner,
-  finalizeAsset,
   listDeals,
-  presignUpload,
   updatePractitioner,
-  uploadFileToPresignedUrl,
+  uploadPractitionerImage,
   type DealCardPayload
 } from "../../services/api";
 import { sessionState } from "../../stores/session";
@@ -254,22 +252,9 @@ async function onPhotoSelected(event: Event) {
   avatarUploadState.value = "idle";
 
   try {
-    const presigned = await presignUpload(sessionState.token, {
-      folder: "practitioners",
-      filename: file.name || "profile-photo.jpg",
-      content_type: file.type || "image/jpeg",
-      content_length: file.size
-    });
-
-    await uploadFileToPresignedUrl(presigned.upload_url, file, presigned.content_type);
-    await finalizeAsset(sessionState.token, {
-      target_type: "practitioner",
-      target_id: sessionState.me.practitioner_id,
-      field_name: "profile_image",
-      object_key: presigned.object_key
-    });
-
-    avatarUrl.value = presigned.object_key;
+    const uploaded = await uploadPractitionerImage(sessionState.token, sessionState.me.practitioner_id, file);
+    avatarUrl.value = uploaded.avatar_url || uploaded.profile_image;
+    avatarPreviewUrl.value = uploaded.avatar_url || localPreviewUrl;
     avatarUploadState.value = "uploaded";
     showToast("Profile photo uploaded.", "success");
   } catch (err) {

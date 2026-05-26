@@ -35,7 +35,11 @@ class Practitioner(Base):
 
     @property
     def avatar_url(self) -> str | None:
-        return self.profile_image
+        if not self.profile_image:
+            return None
+        if self.profile_image.startswith("http://") or self.profile_image.startswith("https://"):
+            return self.profile_image
+        return f"https://{settings.s3_bucket}.s3.{settings.aws_region}.amazonaws.com/{self.profile_image.lstrip('/')}"
 
     @property
     def cover_image_url(self) -> str | None:
