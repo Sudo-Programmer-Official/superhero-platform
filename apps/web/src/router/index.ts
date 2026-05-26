@@ -20,6 +20,6 @@ const router = createRouter({
   ]
 });
 
-router.beforeEach((to) => evaluateRouteGuard(to, sessionState));
+router.beforeEach(async (to) => evaluateRouteGuard(to, sessionState));
 
 export default router;

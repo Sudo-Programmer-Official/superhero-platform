@@ -1,26 +1,35 @@
 import { getPostLoginRoute } from "../composables/usePermissions";
 import { OPERATOR_MODE_ENABLED } from "../config/features";
+import { waitForSessionResolution } from "../stores/session";
 
 export type GuardState = {
   ready: boolean;
+  loading?: boolean;
   token: string | null;
   me: { role: string; practitioner_id?: string | null } | null;
   meLoaded?: boolean;
+  authState?: "loading" | "authenticated" | "unauthenticated";
 };
 
-export function evaluateRouteGuard(
-  to: { name?: string | symbol | null; meta: Record<string, unknown> },
+export async function evaluateRouteGuard(
+  to: { name?: string | symbol | null; meta: Record<string, unknown>; fullPath: string; path: string },
   state: GuardState
 ) {
+  const requiresAuth = Boolean(to.meta.requiresAuth);
+  const isOperatorRoute = to.path === "/operator" || to.path.startsWith("/operator/");
+  if ((requiresAuth || isOperatorRoute) && (!state.ready || state.loading || state.authState === "loading")) {
+    await waitForSessionResolution();
+  }
+
   const role = state.me?.role || "";
   const isPlatformRole = role === "super_admin" || role === "admin" || role === "operator" || role === "finance_admin" || role === "support_admin" || role === "moderator";
   const isAdminRoute = String(to.name || "").startsWith("admin-");
 
   if (!state.ready) return true;
-  if (to.meta.requiresAuth && !state.token) return { name: "signin" };
-  if (to.meta.requiresAuth && state.token && !state.meLoaded) return true;
+  if (requiresAuth && !state.token) return { path: "/sign-in", query: { next: to.fullPath } };
+  if (requiresAuth && state.token && !state.meLoaded) return { path: "/sign-in", query: { next: to.fullPath } };
   if (
-    to.meta.requiresAuth &&
+    requiresAuth &&
     state.token &&
     !state.me?.practitioner_id &&
     to.name !== "onboarding" &&
@@ -30,6 +39,8 @@ export function evaluateRouteGuard(
     return { name: "onboarding" };
   }
   if ((to.name === "signin" || to.name === "signup") && state.token) {
+    const nextParam = new URLSearchParams(to.fullPath.split("?")[1] || "").get("next");
+    if (nextParam && nextParam.startsWith("/")) return nextParam;
     return getPostLoginRoute(state.me?.role);
   }
   if (to.name === "onboarding" && state.token && state.me?.practitioner_id) {

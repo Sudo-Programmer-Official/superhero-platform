@@ -1,5 +1,13 @@
 <template>
-  <div class="operator-shell">
+  <section v-if="isAuthResolving" class="operator-auth-loading" aria-live="polite" aria-busy="true">
+    <div class="operator-auth-loading__card">
+      <p class="operator-auth-loading__brand">OpenMat Operator</p>
+      <div class="operator-auth-loading__pulse"></div>
+      <p class="operator-auth-loading__copy">Verifying session…</p>
+    </div>
+  </section>
+
+  <div v-else class="operator-shell">
     <header class="operator-head">
       <p class="brand">OpenMat Operator</p>
       <button class="legacy-btn" type="button" @click="toolsOpen = true">Tools</button>
@@ -35,10 +43,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { sessionState } from "../stores/session";
 
 const route = useRoute();
 const router = useRouter();
 const toolsOpen = ref(false);
+const isAuthResolving = computed(() => sessionState.authState === "loading" || (sessionState.token && !sessionState.meLoaded));
 const isShareTabActive = computed(() => String(route.name || "").startsWith("operator-share") || String(route.name || "") === "operator-offer-create");
 const isWalletTabActive = computed(() => {
   const name = String(route.name || "");
@@ -61,6 +71,46 @@ function goLegacy() {
   background: radial-gradient(900px 420px at 15% -10%, rgba(38, 91, 169, 0.18), transparent 60%), linear-gradient(180deg, #081a32, #030b18);
   color: #e8eef8;
   padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+}
+.operator-auth-loading {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(900px 420px at 15% -10%, rgba(38, 91, 169, 0.18), transparent 60%), linear-gradient(180deg, #081a32, #030b18);
+  color: #e8eef8;
+}
+.operator-auth-loading__card {
+  width: min(92vw, 420px);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  background: rgba(8, 16, 30, 0.88);
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+.operator-auth-loading__brand {
+  margin: 0;
+  color: #f4d8a7;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 12px;
+}
+.operator-auth-loading__copy {
+  margin: 0;
+  color: rgba(233, 241, 252, 0.76);
+  font-size: 14px;
+}
+.operator-auth-loading__pulse {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(113,182,255,.18), rgba(113,182,255,.5), rgba(113,182,255,.18));
+  background-size: 200% 100%;
+  animation: operatorPulse 1.2s linear infinite;
+}
+@keyframes operatorPulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 .tools-overlay {
   position: fixed;

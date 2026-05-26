@@ -52,7 +52,6 @@
             class="hidden-input"
             type="file"
             accept="image/*,.heic,.heif"
-            capture="environment"
             @change="onPhotoSelected"
           />
         </label>

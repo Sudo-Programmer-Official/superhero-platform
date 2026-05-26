@@ -275,6 +275,19 @@ export type AdminTimelineEventRow = {
 };
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+let onAuthFailureHandler: ((status: 401 | 403) => void) | null = null;
+
+export function setAuthFailureHandler(handler: ((status: 401 | 403) => void) | null): void {
+  onAuthFailureHandler = handler;
+}
+
+async function checkedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const res = await fetch(input, init);
+  if (res.status === 401 || res.status === 403) {
+    onAuthFailureHandler?.(res.status);
+  }
+  return res;
+}
 
 function headers(token: string): HeadersInit {
   const trimmed = token?.trim();
@@ -292,13 +305,13 @@ function headers(token: string): HeadersInit {
 }
 
 export async function fetchMe(token: string): Promise<MePayload> {
-  const res = await fetch(`${API_BASE}/api/v1/me`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/me`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed /me: ${res.status}`);
   return res.json() as Promise<MePayload>;
 }
 
 export async function bootstrapPractitioner(token: string, name: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/v1/me/bootstrap-practitioner`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/me/bootstrap-practitioner`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({ name })
@@ -311,7 +324,7 @@ export async function updatePractitioner(
   practitionerId: string,
   payload: PractitionerUpdatePayload
 ): Promise<PractitionerPublicPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/practitioners/${practitionerId}`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/practitioners/${practitionerId}`, {
     method: "PATCH",
     headers: headers(token),
     body: JSON.stringify(payload)
@@ -321,7 +334,7 @@ export async function updatePractitioner(
 }
 
 export async function presignUpload(token: string, payload: PresignUploadRequest): Promise<PresignUploadResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/storage/presign-upload`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/storage/presign-upload`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify(payload)
@@ -331,7 +344,7 @@ export async function presignUpload(token: string, payload: PresignUploadRequest
 }
 
 export async function uploadFileToPresignedUrl(uploadUrl: string, file: File, contentType: string): Promise<void> {
-  const res = await fetch(uploadUrl, {
+  const res = await checkedFetch(uploadUrl, {
     method: "PUT",
     headers: {
       "Content-Type": contentType
@@ -342,7 +355,7 @@ export async function uploadFileToPresignedUrl(uploadUrl: string, file: File, co
 }
 
 export async function finalizeAsset(token: string, payload: FinalizeAssetRequest): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/v1/storage/finalize-asset`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/storage/finalize-asset`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify(payload)
@@ -364,7 +377,7 @@ export async function uploadPractitionerImage(
     throw new Error("Authentication session expired.");
   }
 
-  const res = await fetch(`${API_BASE}/api/v1/storage/upload-practitioner-image`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/storage/upload-practitioner-image`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${trimmed}`,
@@ -378,7 +391,7 @@ export async function uploadPractitionerImage(
 export async function createCheckoutSession(
   payload: CheckoutSessionCreatePayload
 ): Promise<CheckoutSessionCreateResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/payments/checkout-session`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/payments/checkout-session`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -388,19 +401,19 @@ export async function createCheckoutSession(
 }
 
 export async function fetchCheckoutResult(sessionId: string): Promise<CheckoutSessionResultResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/payments/checkout-result?session_id=${encodeURIComponent(sessionId)}`);
+  const res = await checkedFetch(`${API_BASE}/api/v1/payments/checkout-result?session_id=${encodeURIComponent(sessionId)}`);
   if (!res.ok) throw new Error(`Failed checkout result: ${res.status}`);
   return res.json() as Promise<CheckoutSessionResultResponse>;
 }
 
 export async function fetchDashboardSummary(token: string): Promise<DashboardSummaryPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/dashboard/summary`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/dashboard/summary`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed dashboard summary: ${res.status}`);
   return res.json() as Promise<DashboardSummaryPayload>;
 }
 
 export async function createDeal(token: string, payload: DealCardCreatePayload): Promise<DealCardPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/deal-cards`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/deal-cards`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify(payload)
@@ -411,7 +424,7 @@ export async function createDeal(token: string, payload: DealCardCreatePayload):
 }
 
 export async function listDeals(token: string): Promise<DealCardPayload[]> {
-  const res = await fetch(`${API_BASE}/api/v1/deal-cards`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/deal-cards`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed list deals: ${res.status}`);
   const json = (await res.json()) as DealApiPayload[];
   return json.map(fromDealApi);
@@ -423,7 +436,7 @@ export async function updateDealStatus(
   status: "draft" | "published" | "expired" | "archived"
 ): Promise<DealCardPayload> {
   const wireStatus = status === "archived" ? "canceled" : status;
-  const res = await fetch(`${API_BASE}/api/v1/deal-cards/${dealId}`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/deal-cards/${dealId}`, {
     method: "PATCH",
     headers: headers(token),
     body: JSON.stringify({ status: wireStatus })
@@ -434,7 +447,7 @@ export async function updateDealStatus(
 }
 
 export async function duplicateDeal(token: string, dealId: string): Promise<DealCardPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/deal-cards/${dealId}/duplicate`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/deal-cards/${dealId}/duplicate`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({})
@@ -445,7 +458,7 @@ export async function duplicateDeal(token: string, dealId: string): Promise<Deal
 }
 
 export async function archiveDeal(token: string, dealId: string): Promise<DealCardPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/deal-cards/${dealId}/archive`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/deal-cards/${dealId}/archive`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({})
@@ -456,33 +469,33 @@ export async function archiveDeal(token: string, dealId: string): Promise<DealCa
 }
 
 export async function listPublicDeals(practitionerSlug: string): Promise<DealCardPayload[]> {
-  const res = await fetch(`${API_BASE}/api/v1/deal-cards/public/${practitionerSlug}`);
+  const res = await checkedFetch(`${API_BASE}/api/v1/deal-cards/public/${practitionerSlug}`);
   if (!res.ok) throw new Error(`Failed list public deals: ${res.status}`);
   const json = (await res.json()) as DealApiPayload[];
   return json.map(fromDealApi);
 }
 
 export async function fetchPublicDeal(practitionerSlug: string, dealSlug: string): Promise<DealCardPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/deal-cards/public/${practitionerSlug}/${dealSlug}`);
+  const res = await checkedFetch(`${API_BASE}/api/v1/deal-cards/public/${practitionerSlug}/${dealSlug}`);
   if (!res.ok) throw new Error(`Failed public deal: ${res.status}`);
   const json = (await res.json()) as DealApiPayload;
   return fromDealApi(json);
 }
 
 export async function fetchPublicPractitioner(practitionerSlug: string): Promise<PractitionerPublicPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/practitioners/public/${practitionerSlug}`);
+  const res = await checkedFetch(`${API_BASE}/api/v1/practitioners/public/${practitionerSlug}`);
   if (!res.ok) throw new Error(`Failed public practitioner: ${res.status}`);
   return res.json() as Promise<PractitionerPublicPayload>;
 }
 
 export async function listWalletPasses(token: string): Promise<WalletPassPayload[]> {
-  const res = await fetch(`${API_BASE}/api/v1/wallet-passes`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/wallet-passes`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed wallet pass list: ${res.status}`);
   return res.json() as Promise<WalletPassPayload[]>;
 }
 
 export async function redeemWalletPass(token: string, qrCode: string): Promise<WalletPassPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/wallet-passes/redeem`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/wallet-passes/redeem`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({ qr_code: qrCode })
@@ -501,7 +514,7 @@ export async function redeemWalletPass(token: string, qrCode: string): Promise<W
 }
 
 export async function restoreWalletPass(token: string, walletPassId: string): Promise<WalletPassPayload> {
-  const res = await fetch(`${API_BASE}/api/v1/wallet-passes/${walletPassId}/restore`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/wallet-passes/${walletPassId}/restore`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({})
@@ -511,7 +524,7 @@ export async function restoreWalletPass(token: string, walletPassId: string): Pr
 }
 
 export async function listBookings(token: string): Promise<BookingPayload[]> {
-  const res = await fetch(`${API_BASE}/api/v1/bookings`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/bookings`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed booking list: ${res.status}`);
   const json = (await res.json()) as BookingApiPayload[];
   return json.map(fromBookingApi);
@@ -523,7 +536,7 @@ export async function listActivityEvents(token: string, cursor?: string): Promis
   if (cursor) {
     params.set("cursor", cursor);
   }
-  const res = await fetch(`${API_BASE}/api/v1/activity-events?${params.toString()}`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/activity-events?${params.toString()}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed activity events: ${res.status}`);
   return (await res.json()) as ActivityEventPage;
 }
@@ -532,7 +545,7 @@ export async function listAdminPractitioners(token: string, query?: string): Pro
   const params = new URLSearchParams();
   if (query?.trim()) params.set("query", query.trim());
   const q = params.toString();
-  const res = await fetch(`${API_BASE}/api/v1/admin/practitioners${q ? `?${q}` : ""}`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/practitioners${q ? `?${q}` : ""}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed admin practitioners: ${res.status}`);
   return (await res.json()) as AdminPractitionerRow[];
 }
@@ -542,7 +555,7 @@ export async function adminPractitionerAction(
   practitionerId: string,
   action: "impersonate" | "suspend" | "activate" | "grant_credits" | "reset_onboarding" | "resend_verification"
 ): Promise<AdminPractitionerRow> {
-  const res = await fetch(`${API_BASE}/api/v1/admin/practitioners/${practitionerId}/actions`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/practitioners/${practitionerId}/actions`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({ action })
@@ -556,7 +569,7 @@ export async function listAdminDeals(token: string, query?: string, dealStatus?:
   if (query?.trim()) params.set("query", query.trim());
   if (dealStatus?.trim()) params.set("status", dealStatus.trim());
   const q = params.toString();
-  const res = await fetch(`${API_BASE}/api/v1/admin/deals${q ? `?${q}` : ""}`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/deals${q ? `?${q}` : ""}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed admin deals: ${res.status}`);
   return (await res.json()) as AdminDealRow[];
 }
@@ -566,7 +579,7 @@ export async function adminDealAction(
   dealId: string,
   action: "archive" | "unpublish" | "feature" | "moderate"
 ): Promise<AdminDealRow> {
-  const res = await fetch(`${API_BASE}/api/v1/admin/deals/${dealId}/actions`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/deals/${dealId}/actions`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({ action })
@@ -580,7 +593,7 @@ export async function listAdminPayouts(token: string, query?: string, payoutStat
   if (query?.trim()) params.set("query", query.trim());
   if (payoutStatus?.trim()) params.set("status", payoutStatus.trim());
   const q = params.toString();
-  const res = await fetch(`${API_BASE}/api/v1/admin/payouts${q ? `?${q}` : ""}`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/payouts${q ? `?${q}` : ""}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed admin payouts: ${res.status}`);
   return (await res.json()) as AdminPayoutRow[];
 }
@@ -590,7 +603,7 @@ export async function adminPayoutAction(
   practitionerId: string,
   action: "mark_paid" | "retry"
 ): Promise<AdminPayoutRow> {
-  const res = await fetch(`${API_BASE}/api/v1/admin/payouts/${practitionerId}/actions`, {
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/payouts/${practitionerId}/actions`, {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({ action })
@@ -604,7 +617,7 @@ export async function listAdminBookings(token: string, query?: string, bookingSt
   if (query?.trim()) params.set("query", query.trim());
   if (bookingStatus?.trim()) params.set("status", bookingStatus.trim());
   const q = params.toString();
-  const res = await fetch(`${API_BASE}/api/v1/admin/bookings${q ? `?${q}` : ""}`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/bookings${q ? `?${q}` : ""}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed admin bookings: ${res.status}`);
   return (await res.json()) as AdminBookingRow[];
 }
@@ -618,7 +631,7 @@ export async function listAdminWalletPasses(
   if (query?.trim()) params.set("query", query.trim());
   if (passStatus?.trim()) params.set("status", passStatus.trim());
   const q = params.toString();
-  const res = await fetch(`${API_BASE}/api/v1/admin/wallet-passes${q ? `?${q}` : ""}`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/wallet-passes${q ? `?${q}` : ""}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed admin wallet passes: ${res.status}`);
   return (await res.json()) as AdminWalletPassRow[];
 }
@@ -632,7 +645,7 @@ export async function listAdminRedemptions(
   if (query?.trim()) params.set("query", query.trim());
   params.set("window", window);
   const q = params.toString();
-  const res = await fetch(`${API_BASE}/api/v1/admin/redemptions${q ? `?${q}` : ""}`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/redemptions${q ? `?${q}` : ""}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed admin redemptions: ${res.status}`);
   return (await res.json()) as AdminRedemptionRow[];
 }
@@ -647,7 +660,7 @@ export async function listAdminTimeline(
   params.set("entity_type", entityType);
   params.set("entity_id", entityId);
   params.set("limit", String(limit));
-  const res = await fetch(`${API_BASE}/api/v1/admin/timeline?${params.toString()}`, { headers: headers(token) });
+  const res = await checkedFetch(`${API_BASE}/api/v1/admin/timeline?${params.toString()}`, { headers: headers(token) });
   if (!res.ok) throw new Error(`Failed admin timeline: ${res.status}`);
   return (await res.json()) as AdminTimelineEventRow[];
 }

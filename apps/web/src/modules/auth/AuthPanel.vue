@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { FirebaseError } from "firebase/app";
 import AppButton from "../../design-system/primitives/AppButton.vue";
 import AppInput from "../../design-system/primitives/AppInput.vue";
@@ -67,6 +67,7 @@ const props = withDefaults(
 );
 
 const router = useRouter();
+const route = useRoute();
 const name = ref("");
 const email = ref("");
 const password = ref("");
@@ -132,6 +133,11 @@ async function onSubmit() {
     }
 
     await loginWithEmail(email.value, password.value);
+    const next = String(route.query.next || "").trim();
+    if (next.startsWith("/")) {
+      await router.push(next);
+      return;
+    }
     await router.push("/dashboard");
   } catch (err) {
     errorMessage.value = mapAuthError(err);
