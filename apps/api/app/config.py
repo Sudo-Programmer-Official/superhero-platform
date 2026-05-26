@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     database_url_sync: str = "postgresql://postgres:postgres@localhost:5432/superhero_platform"
     db_schema: str = "superhero_platform"
     cors_origins: str = "http://localhost:5173,http://localhost:5174"
+    cors_origin_regex: str = r"^https://([a-z0-9-]+\.)?openmat\.app$"
 
     # Firebase Auth settings (verification + issuer validation)
     firebase_project_id: str = ""
@@ -112,7 +113,18 @@ class Settings(BaseSettings):
                 continue
             # Browsers send Origin without trailing slash; keep parity for exact CORS match.
             normalized.append(cleaned.rstrip("/"))
-        return normalized
+        # Production-safe defaults to avoid lockout from env drift.
+        defaults = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+            "https://openmat.app",
+            "https://www.openmat.app",
+        ]
+        merged = {item for item in normalized if item}
+        merged.update(defaults)
+        return sorted(merged)
 
     @property
     def required_env_keys(self) -> list[str]:

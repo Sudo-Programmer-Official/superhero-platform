@@ -60,7 +60,8 @@ const features = [
   max-width: 1200px;
   align-items: start;
   gap: 24px;
-  padding: 4px 0 16px;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  box-sizing: border-box;
 }
 
 .auth-view__right {
@@ -90,6 +91,7 @@ const features = [
 
 .auth-view__left {
   max-width: 640px;
+  padding: 32px 2px 40px;
 }
 
 .auth-view__title {
@@ -98,6 +100,7 @@ const features = [
   font-weight: 800;
   line-height: 0.95;
   letter-spacing: -0.03em;
+  max-width: 14ch;
 }
 
 .auth-view__title span {
@@ -111,17 +114,17 @@ const features = [
 }
 
 .auth-view__copy {
-  margin: 16px 0 0;
-  max-width: 56ch;
+  margin: 20px 0 0;
+  max-width: 48ch;
   color: rgba(255, 255, 255, 0.72);
   font-size: 16px;
   line-height: 1.55;
 }
 
 .auth-view__features {
-  margin-top: 24px;
+  margin-top: 28px;
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .auth-feature {
@@ -157,18 +160,28 @@ const features = [
 
 @media (max-width: 767px) {
   .auth-view {
-    gap: 18px;
-    padding: 0 0 8px;
+    gap: 22px;
+    padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+
+  .auth-view__left {
+    padding: 8px 2px 10px;
   }
 
   .auth-view__copy {
-    margin-top: 12px;
+    margin-top: 16px;
     font-size: 15px;
   }
 
   .auth-view__features {
-    margin-top: 18px;
-    gap: 12px;
+    margin-top: 22px;
+    gap: 14px;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-view {
+    padding: calc(env(safe-area-inset-top, 0px) + 32px) 24px calc(env(safe-area-inset-bottom, 0px) + 32px);
   }
 }
 

@@ -169,16 +169,16 @@ async function onForgotPassword() {
 .auth-card {
   width: 100%;
   max-width: 520px;
-  border-radius: 32px;
+  border-radius: 24px;
   overflow: hidden;
 }
 
 .auth-card__inner {
-  padding: 40px;
+  padding: 28px;
 }
 
 .auth-card__label {
-  margin: 0 0 20px;
+  margin: 0 0 14px;
   color: var(--accent);
   font-size: 11px;
   font-weight: 600;
@@ -187,7 +187,7 @@ async function onForgotPassword() {
 }
 
 .auth-card__title {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   font-size: 36px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -195,24 +195,24 @@ async function onForgotPassword() {
 }
 
 .auth-card__subtitle {
-  margin: 0 0 24px;
+  margin: 0 0 20px;
   color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
   line-height: 1.5;
 }
 
 .auth-card__group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .auth-card__field-label {
-  margin: 0 0 16px;
+  margin: 0 0 10px;
   color: rgba(255, 255, 255, 0.62);
   font-size: 12px;
 }
 
 .auth-card__helper {
-  margin-top: 10px;
+  margin-top: 8px;
   border: 0;
   background: transparent;
   color: var(--accent);
@@ -237,7 +237,7 @@ async function onForgotPassword() {
 }
 
 .auth-card__error {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   border: 1px solid rgba(255, 106, 106, 0.55);
   background: rgba(255, 106, 106, 0.13);
   border-radius: 12px;
@@ -248,7 +248,7 @@ async function onForgotPassword() {
 
 .auth-card__cta {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 24px;
 }
 
 .auth-card__footer {
@@ -264,17 +264,29 @@ async function onForgotPassword() {
 
 @media (max-width: 1023px) {
   .auth-card__inner {
-    padding: 32px;
+    padding: 24px;
   }
 }
 
 @media (max-width: 767px) {
   .auth-card__inner {
-    padding: 24px;
+    padding: 20px;
   }
 
   .auth-card__title {
     font-size: 32px;
+  }
+
+  .auth-card__group {
+    margin-bottom: 16px;
+  }
+
+  .auth-card__cta {
+    margin-top: 24px;
+  }
+
+  .auth-card__footer {
+    margin-top: 20px;
   }
 }
 </style>

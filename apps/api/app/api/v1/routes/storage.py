@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from botocore.exceptions import ClientError
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -103,6 +104,14 @@ async def upload_practitioner_image(
         storage.upload_bytes(object_key=object_key, body=body, content_type=content_type)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except ClientError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Storage upload failed: AWS credentials do not allow s3:PutObject "
+                f"for bucket '{storage.bucket}' and prefix '{storage.prefix}/practitioners/'."
+            ),
+        ) from exc
 
     practitioner.profile_image = object_key
     await session.commit()
