@@ -101,7 +101,7 @@ async function refresh() {
 }
 
 function goScanner() {
-  void router.push({ name: "redemptions", query: { mode: "operator" } });
+  void router.push({ name: "operator-scanner" });
 }
 
 async function copyCode(code: string) {

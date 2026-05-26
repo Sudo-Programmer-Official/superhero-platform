@@ -40,7 +40,10 @@ const route = useRoute();
 const router = useRouter();
 const toolsOpen = ref(false);
 const isShareTabActive = computed(() => String(route.name || "").startsWith("operator-share") || String(route.name || "") === "operator-offer-create");
-const isWalletTabActive = computed(() => String(route.name || "").startsWith("operator-wallet"));
+const isWalletTabActive = computed(() => {
+  const name = String(route.name || "");
+  return name.startsWith("operator-wallet") || name === "operator-scanner";
+});
 
 function goLegacy() {
   void router.push({ name: "dashboard" });

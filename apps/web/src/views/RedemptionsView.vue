@@ -134,6 +134,7 @@
               <p>{{ formatTime(item.timestamp) }}</p>
             </div>
           </article>
+          <p v-if="history.length === 0" class="history-empty">No redemptions yet. Create and redeem a real pass to see activity.</p>
         </div>
       </PaddedSectionCard>
     </div>
@@ -299,6 +300,7 @@ onBeforeUnmount(() => {
 .history-head h2 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -0.01em; }
 .history-head span { border-radius: 999px; border: 1px solid rgba(255,255,255,.16); padding: 6px 10px; font-size: 12px; color: rgba(255,255,255,.75); }
 .history-list { margin-top: 10px; display: grid; gap: 8px; }
+.history-empty { margin: 0; font-size: 13px; color: rgba(255,255,255,.62); border: 1px dashed rgba(255,255,255,.18); border-radius: 12px; padding: 12px; }
 .history-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02); padding: 10px; }
 .avatar { width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; background: linear-gradient(145deg, rgba(244,201,125,.3), rgba(77,57,31,.42)); border: 1px solid rgba(240,190,100,.34); color: #f4d8a7; font-size: 12px; font-weight: 700; }
 .name { margin: 0; font-weight: 600; }

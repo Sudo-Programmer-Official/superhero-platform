@@ -34,16 +34,6 @@ export type RedemptionHistoryItem = {
   status: "success" | "already_redeemed" | "invalid" | "expired";
 };
 
-const MOCK_NAMES = ["Ava Reed", "Megan Cruz", "Jess Kim", "Noah Bell", "Mila Gray", "Eli Park"];
-const MOCK_EVENTS = ["Breathwork Journey", "Morning Flow Yoga", "Sound Bath Evening", "Mobility Reset"];
-
-function pickFrom(input: string, values: string[]): string {
-  const seed = input
-    .split("")
-    .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return values[seed % values.length];
-}
-
 function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -138,9 +128,12 @@ export function useRedemptionFlow() {
     });
   }
 
-  function pushHistory(code: string, status: RedemptionHistoryItem["status"]) {
-    const attendeeName = pickFrom(code, MOCK_NAMES);
-    const eventName = pickFrom(`${code}:event`, MOCK_EVENTS);
+  function pushHistory(
+    code: string,
+    status: RedemptionHistoryItem["status"],
+    attendeeName = "Unknown attendee",
+    eventName = "OpenMat experience"
+  ) {
     history.value.unshift({
       id: `${Date.now()}-${code.slice(0, 10)}`,
       attendeeName,
@@ -153,34 +146,9 @@ export function useRedemptionFlow() {
   }
 
   function hydrateMockHistory() {
+    // Seed data intentionally removed: history should reflect only real scans.
     if (history.value.length > 0) return;
-    const now = Date.now();
-    history.value = [
-      {
-        id: "h1",
-        attendeeName: "Jess Kim",
-        eventName: "Breathwork Journey",
-        timestamp: new Date(now - 2 * 60 * 1000).toISOString(),
-        avatarInitials: "JK",
-        status: "success"
-      },
-      {
-        id: "h2",
-        attendeeName: "Megan Cruz",
-        eventName: "Morning Flow Yoga",
-        timestamp: new Date(now - 17 * 60 * 1000).toISOString(),
-        avatarInitials: "MC",
-        status: "already_redeemed"
-      },
-      {
-        id: "h3",
-        attendeeName: "Ava Reed",
-        eventName: "Sound Bath Evening",
-        timestamp: new Date(now - 46 * 60 * 1000).toISOString(),
-        avatarInitials: "AR",
-        status: "expired"
-      }
-    ];
+    history.value = [];
   }
 
   async function requestCameraAndScan() {
@@ -228,8 +196,8 @@ export function useRedemptionFlow() {
 
     try {
       const payload = await redeemWalletPass(sessionState.token, code);
-      const attendeeName = payload.attendee_name || pickFrom(code, MOCK_NAMES);
-      const eventName = payload.deal_title || pickFrom(`${code}:event`, MOCK_EVENTS);
+      const attendeeName = payload.attendee_name || "Unknown attendee";
+      const eventName = payload.deal_title || "OpenMat experience";
       const operatorLabel = sessionState.user?.displayName?.trim() || sessionState.me?.email || "OpenMat Operator";
       const deviceLabel = navigator.userAgent.includes("Mobile") ? "Mobile scanner" : "Web scanner";
       result.value = {
@@ -244,7 +212,7 @@ export function useRedemptionFlow() {
       scannerState.value = "success";
       triggerHaptic("success");
       showToast("Pass redeemed successfully.", "success");
-      pushHistory(code, "success");
+      pushHistory(code, "success", attendeeName, eventName);
     } catch (err: unknown) {
       if (err instanceof ApiHttpError && err.status === 409) {
         const detail = (typeof err.detail === "object" && err.detail ? err.detail : {}) as Record<string, unknown>;
