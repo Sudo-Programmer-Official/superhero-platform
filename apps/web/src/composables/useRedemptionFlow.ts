@@ -131,8 +131,8 @@ export function useRedemptionFlow() {
   function pushHistory(
     code: string,
     status: RedemptionHistoryItem["status"],
-    attendeeName = "Unknown attendee",
-    eventName = "OpenMat experience"
+    attendeeName = "Attendee unavailable",
+    eventName = "Event unavailable"
   ) {
     history.value.unshift({
       id: `${Date.now()}-${code.slice(0, 10)}`,
@@ -196,8 +196,8 @@ export function useRedemptionFlow() {
 
     try {
       const payload = await redeemWalletPass(sessionState.token, code);
-      const attendeeName = payload.attendee_name || "Unknown attendee";
-      const eventName = payload.deal_title || "OpenMat experience";
+      const attendeeName = payload.attendee_name || "Attendee unavailable";
+      const eventName = payload.deal_title || "Event unavailable";
       const operatorLabel = sessionState.user?.displayName?.trim() || sessionState.me?.email || "OpenMat Operator";
       const deviceLabel = navigator.userAgent.includes("Mobile") ? "Mobile scanner" : "Web scanner";
       result.value = {

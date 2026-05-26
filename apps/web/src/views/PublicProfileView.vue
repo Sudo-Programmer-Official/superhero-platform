@@ -11,7 +11,7 @@
           <p class="eyebrow">Practitioner</p>
           <h1>{{ practitioner?.name || practitionerSlug }}</h1>
           <p class="tagline">{{ practitioner?.tagline || practitioner?.category || "Wellness creator" }}</p>
-          <p class="meta">{{ practitioner?.location || "Location pending" }} · {{ practitioner?.verification_state || "unverified" }}</p>
+          <p class="meta">{{ practitioner?.location || "Location not provided" }} · {{ practitioner?.verification_state || "unverified" }}</p>
         </div>
       </div>
       <div class="social-row">

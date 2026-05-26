@@ -13,7 +13,7 @@
           <p>{{ form.tagline || "Define your wellness brand identity and public presence." }}</p>
           <div class="hero-meta">
             <span class="badge">{{ verificationLabel }}</span>
-            <span>{{ form.location || "Location pending" }}</span>
+            <span>{{ form.location || "Location not provided" }}</span>
             <span>/p/{{ form.slug || "your-slug" }}</span>
           </div>
         </div>
@@ -42,7 +42,7 @@
     <PaddedSectionCard>
       <div class="section-head"><h3>Practice Details</h3></div>
       <div class="grid-2">
-        <label class="field"><span>Practice Name</span><AppInput v-model="form.name" placeholder="Marla Wellness Studio" /></label>
+        <label class="field"><span>Practice Name</span><AppInput v-model="form.name" placeholder="Your practice name" /></label>
         <label class="field"><span>Category</span><AppInput v-model="form.category" placeholder="Breathwork" /></label>
         <label class="field"><span>Specialties (comma separated)</span><AppInput v-model="specialtiesText" placeholder="Sound bath, Yoga, Meditation" /></label>
         <label class="field"><span>Location</span><AppInput v-model="form.location" placeholder="Chicago, IL" /></label>

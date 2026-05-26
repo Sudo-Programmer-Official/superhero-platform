@@ -12,7 +12,7 @@
             <p>Define the core identity and messaging for this deal.</p>
           </div>
           <div class="field-grid">
-            <div class="field"><label>Title</label><AppInput v-model="studio.form.title" placeholder="Breathwork Journey" /></div>
+            <div class="field"><label>Title</label><AppInput v-model="studio.form.title" placeholder="Offer title" /></div>
             <div class="field"><label>Category</label><AppInput v-model="studio.form.category" placeholder="Breathwork" /></div>
             <div class="field"><label>Location</label><AppInput v-model="studio.form.location" placeholder="Los Angeles, CA" /></div>
             <div class="field"><label>Cover image URL</label><AppInput v-model="studio.form.coverImage" placeholder="https://..." /></div>
@@ -85,7 +85,7 @@
               <div v-else class="public-preview__img-fallback"></div>
               <h3>{{ studio.form.title || 'Untitled deal' }}</h3>
               <p>{{ studio.form.description || 'Add description to improve conversion.' }}</p>
-              <div class="meta">{{ formattedStart }} · {{ studio.form.location || 'Location pending' }}</div>
+              <div class="meta">{{ formattedStart }} · {{ studio.form.location || 'Add location' }}</div>
               <div class="price">${{ studio.form.price || '0.00' }}</div>
             </article>
             <article class="wallet-preview">
@@ -149,7 +149,7 @@ import { sessionState } from "../stores/session";
 import { showToast } from "../stores/toast";
 
 const formattedStart = computed(() => {
-  if (!studio.form.startsAt) return "Date pending";
+  if (!studio.form.startsAt) return "Add date and time";
   const iso = new Date(studio.form.startsAt).toISOString();
   return `${formatLocalDateTime(iso, studio.form.timezone)} ${formatTimezone(iso, studio.form.timezone)}`;
 });
@@ -195,7 +195,7 @@ async function onCreateDraft() {
       practitioner_id: auth.practitionerId,
       title: studio.form.title || "Untitled Deal",
       description: studio.form.description || null,
-      location: studio.form.location || "TBD",
+      location: studio.form.location || null,
       timezone: studio.form.timezone || "UTC",
       image: studio.form.coverImage || null,
       price: studio.form.price || "0.00",

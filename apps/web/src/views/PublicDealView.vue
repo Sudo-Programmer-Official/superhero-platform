@@ -51,7 +51,7 @@
           <div class="meta-grid">
             <p><strong>Date</strong> {{ formatDate(deal.start_time) }}</p>
             <p><strong>Ends</strong> {{ formatDate(deal.end_time) }}</p>
-            <p><strong>Location</strong> {{ deal.location || "TBD" }}</p>
+            <p><strong>Location</strong> {{ deal.location || "Location shared after booking" }}</p>
             <p><strong>Availability</strong> {{ deal.remaining_slots }} / {{ deal.capacity }} left</p>
           </div>
         </div>

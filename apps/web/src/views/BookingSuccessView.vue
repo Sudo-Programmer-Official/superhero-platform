@@ -12,8 +12,8 @@
 
       <section class="detail-card">
         <p><span>Booking number</span><strong>{{ bookingNumber || "Generating..." }}</strong></p>
-        <p><span>Event</span><strong>{{ deal?.title || "OpenMat experience" }}</strong></p>
-        <p><span>Date</span><strong>{{ deal ? formatDate(deal.start_time) : "TBD" }}</strong></p>
+        <p><span>Event</span><strong>{{ deal?.title || "Event details loading" }}</strong></p>
+        <p><span>Date</span><strong>{{ deal ? formatDate(deal.start_time) : "Date pending confirmation" }}</strong></p>
         <p><span>Attendee</span><strong>{{ attendeeName || "Guest attendee" }}</strong></p>
         <p><span>Confirmation email</span><strong>{{ attendeeEmail || "Email will be delivered shortly" }}</strong></p>
       </section>

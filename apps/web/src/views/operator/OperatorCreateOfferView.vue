@@ -16,7 +16,7 @@
       </template>
       <template v-else-if="step === 2">
         <h2>Step 2 · Title & Description</h2>
-        <label><span>Title</span><input v-model="form.title" type="text" placeholder="Breathwork Journey" /></label>
+        <label><span>Title</span><input v-model="form.title" type="text" placeholder="Offer title" /></label>
         <label><span>Short description</span><textarea v-model="form.description" rows="4" placeholder="A premium wellness experience."></textarea></label>
       </template>
       <template v-else-if="step === 3">
@@ -58,11 +58,11 @@
       <p class="eyebrow">Live Preview</p>
       <img v-if="form.image" :src="form.image" alt="Preview cover" class="cover" />
       <div v-else class="cover fallback"></div>
-      <h3>{{ form.title || "Untitled offer" }}</h3>
+      <h3>{{ form.title || "Offer title" }}</h3>
       <p class="sub">{{ form.description || "Add a short description for customers." }}</p>
       <p class="meta">{{ priceLabel }} · {{ form.capacity || "0" }} spots</p>
       <p class="meta">{{ scheduleLabel }}</p>
-      <p class="meta">{{ form.location || "Location pending" }}</p>
+      <p class="meta">{{ form.location || "Add location" }}</p>
     </article>
 
     <div v-if="successSheetOpen" class="success-overlay" @click.self="successSheetOpen = false">
@@ -105,7 +105,7 @@ const form = reactive({
   capacity: "20",
   startsAt: "",
   durationMin: "60",
-  location: "TBD",
+  location: "",
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
 });
 
@@ -123,7 +123,7 @@ const timezoneOptions = [
 const canPublish = computed(() => Boolean(form.title.trim() && form.price && form.capacity && form.startsAt));
 const priceLabel = computed(() => formatMoney(form.price || 0, "USD"));
 const scheduleLabel = computed(() => {
-  if (!form.startsAt) return "Date pending";
+  if (!form.startsAt) return "Add date and time";
   const startIso = new Date(form.startsAt).toISOString();
   return `${formatLocalDateTime(startIso, form.timezone)} ${formatTimezone(startIso, form.timezone)}`;
 });
@@ -174,7 +174,7 @@ async function quickPublish() {
       title: form.title,
       description: form.description || null,
       image: form.image || null,
-      location: form.location || "TBD",
+      location: form.location || null,
       timezone: form.timezone,
       price: form.price,
       capacity: Number(form.capacity),

@@ -31,8 +31,8 @@
             <p class="id">#{{ pass.id.slice(0, 8) }}</p>
             <span class="state-chip">{{ state(pass) }}</span>
           </div>
-          <p class="title">{{ pass.deal_title || `Deal ${pass.deal_id.slice(0, 8)}` }}</p>
-          <p class="meta">{{ pass.attendee_email || "Guest" }}</p>
+          <p class="title">{{ pass.deal_title || "Untitled deal" }}</p>
+          <p class="meta">{{ pass.attendee_email || "Attendee email unavailable" }}</p>
           <p class="meta" v-if="state(pass) === 'active'">Ready for check-in</p>
           <p class="meta" v-if="state(pass) === 'redeemed'">Checked in successfully</p>
           <div class="actions">

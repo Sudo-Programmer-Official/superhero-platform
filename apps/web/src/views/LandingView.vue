@@ -86,11 +86,11 @@
                   <div class="hero-phone">
                     <div class="hero-phone__island"></div>
                     <div class="hero-phone__content">
-                      <p class="hero-phone__hello">Hi, Marla 👋</p>
+                      <p class="hero-phone__hello">Hi there 👋</p>
                       <p class="hero-phone__muted">Here's what's happening</p>
                       <p class="hero-phone__today">Today</p>
                       <div class="hero-phone__upcoming">
-                        <p class="hero-phone__upcoming-title">Breathwork Journey</p>
+                        <p class="hero-phone__upcoming-title">Featured Experience</p>
                         <p class="hero-phone__upcoming-meta">7:00 PM · 6 seats left</p>
                       </div>
 
@@ -130,8 +130,8 @@
                 <div class="hero-wallet-stack">
                   <BaseGlassCard class="hero-wallet-card" padding="sm" radius="md">
                     <p class="hero-wallet-card__brand">OpenMat</p>
-                    <p class="hero-wallet-card__title">Breathwork Journey</p>
-                    <p class="hero-wallet-card__meta">with Marla · Fri 7:00 PM</p>
+                    <p class="hero-wallet-card__title">Featured Experience</p>
+                    <p class="hero-wallet-card__meta">with your host · Fri 7:00 PM</p>
                   </BaseGlassCard>
 
                   <div class="hero-nfc">
@@ -197,8 +197,8 @@
 
             <div class="deal-heading-row">
               <div>
-                <h3 class="deal-title">Breathwork Journey</h3>
-                <p class="deal-host">with Marla</p>
+                <h3 class="deal-title">Featured Experience</h3>
+                <p class="deal-host">with your host</p>
               </div>
               <p class="deal-price">$45</p>
             </div>
@@ -218,7 +218,7 @@
 
           <BaseGlassCard class="commerce-panel" padding="sm" radius="md">
             <p class="commerce-label">Checkout</p>
-            <h3 class="checkout-title">Breathwork Journey</h3>
+            <h3 class="checkout-title">Featured Experience</h3>
             <p class="checkout-meta">May 24, 2026 · 7:00 PM</p>
 
             <div class="checkout-divider"></div>
@@ -252,8 +252,8 @@
             <div class="wallet-phone">
               <div class="wallet-pass">
                 <p class="wallet-brand">OpenMat</p>
-                <h3>Breathwork Journey</h3>
-                <p class="wallet-meta">with Marla</p>
+                <h3>Featured Experience</h3>
+                <p class="wallet-meta">with your host</p>
                 <p class="wallet-meta">May 24, 2026 at 7:00 PM</p>
                 <p class="wallet-meta">Order 4061-12345</p>
                 <div class="wallet-qr">▦</div>
@@ -283,7 +283,7 @@
                 </div>
 
                 <div class="mobile-featured">
-                  <p>Breathwork Journey</p>
+                  <p>Featured Experience</p>
                   <span>Today · 7:00 PM · 6 seats left</span>
                 </div>
 
@@ -352,8 +352,8 @@
             <div class="iphone-screen wallet-screen">
                 <div class="wallet-pass-mobile">
                   <p>OpenMat</p>
-                  <h4>Breathwork Journey</h4>
-                  <span>with Marla</span>
+                  <h4>Featured Experience</h4>
+                  <span>with your host</span>
                   <span>May 24, 2026 at 7:00 PM</span>
                   <span>Order 4061-12345</span>
                   <div class="wallet-qr-mobile">▦</div>
@@ -376,10 +376,10 @@
           <MobileDeviceShell active-tab="profile">
             <div class="iphone-screen">
                 <div class="profile-top">
-                  <img v-if="showProfileAvatar" src="https://images.unsplash.com/photo-1542204625-de293a5df31c?auto=format&fit=crop&w=120&q=80" alt="Marla profile" @error="showProfileAvatar = false" />
+                  <img v-if="showProfileAvatar" src="https://images.unsplash.com/photo-1542204625-de293a5df31c?auto=format&fit=crop&w=120&q=80" alt="Host profile" @error="showProfileAvatar = false" />
                   <div v-else class="profile-fallback-avatar">MB</div>
                   <div>
-                    <p>Marla B.</p>
+                    <p>Host Profile</p>
                     <span>View profile</span>
                   </div>
                 </div>

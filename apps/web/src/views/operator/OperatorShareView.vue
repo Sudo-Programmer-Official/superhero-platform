@@ -8,7 +8,7 @@
       <div v-if="primaryOffer" class="offer-hero">
         <img v-if="primaryOffer.image" :src="primaryOffer.image" alt="Offer image" class="cover" />
         <div class="hero-body">
-          <p class="meta">{{ formatDate(primaryOffer.start_time) }} · {{ primaryOffer.location || "TBD" }}</p>
+          <p class="meta">{{ formatDate(primaryOffer.start_time) }}<span v-if="primaryOffer.location"> · {{ primaryOffer.location }}</span></p>
           <p class="meta">{{ formatMoney(primaryOffer.base_price, primaryOffer.currency) }} · {{ primaryOffer.remaining_slots }}/{{ primaryOffer.capacity }} left</p>
         </div>
       </div>
@@ -31,16 +31,29 @@
       <div class="grid">
         <label>
           <span>Display name</span>
-          <input v-model="name" type="text" placeholder="Jordan Sara" />
+          <input v-model="name" type="text" placeholder="Enter your display name" />
         </label>
         <label>
-          <span>Image URL</span>
-          <input v-model="avatarUrl" type="url" placeholder="https://..." />
+          <span>Profile photo</span>
+          <div class="photo-picker">
+            <button class="btn icon-btn" type="button" @click="openPhotoPicker" aria-label="Choose profile photo">
+              📷
+            </button>
+            <p class="hint">{{ avatarUrl ? "Photo selected" : "Tap camera to choose from photos" }}</p>
+          </div>
+          <input
+            ref="photoInput"
+            class="hidden-input"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            @change="onPhotoSelected"
+          />
         </label>
       </div>
       <label>
         <span>Short bio</span>
-        <textarea v-model="bio" rows="3" placeholder="Personal trainer helping clients reset and recover."></textarea>
+        <textarea v-model="bio" rows="3" placeholder="Add a short bio"></textarea>
       </label>
       <details class="advanced">
         <summary>Advanced settings</summary>
@@ -78,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 import { formatLocalDateTime, formatMoney } from "../../domain/deal";
 import { fetchPublicPractitioner, listDeals, updatePractitioner, type DealCardPayload } from "../../services/api";
@@ -95,6 +108,7 @@ const deals = ref<DealCardPayload[]>([]);
 const name = ref("");
 const avatarUrl = ref("");
 const bio = ref("");
+const photoInput = useTemplateRef<HTMLInputElement>("photoInput");
 
 const publishedDeals = computed(() => deals.value.filter((d) => d.status === "published"));
 const primaryOffer = computed(() => publishedDeals.value[0] || null);
@@ -199,6 +213,35 @@ function createOffer() {
   void router.push({ name: "operator-offer-create" });
 }
 
+function openPhotoPicker() {
+  photoInput.value?.click();
+}
+
+async function onPhotoSelected(event: Event) {
+  const input = event.target as HTMLInputElement | null;
+  const file = input?.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    showToast("Please select an image file.", "warning");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const result = String(reader.result || "");
+    if (!result) {
+      showToast("Could not read image.", "error");
+      return;
+    }
+    avatarUrl.value = result;
+    showToast("Photo selected. Tap Save to apply.", "success");
+    if (input) input.value = "";
+  };
+  reader.onerror = () => {
+    showToast("Could not read image.", "error");
+  };
+  reader.readAsDataURL(file);
+}
+
 onMounted(() => {
   void load();
 });
@@ -221,6 +264,9 @@ label { display: grid; gap: 6px; }
 label span { font-size: 12px; color: rgba(230,238,249,.72); text-transform: uppercase; letter-spacing: .08em; }
 input, textarea { width: 100%; min-height: var(--mvp-btn-h, 44px); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(7,14,24,.72); color: #e8eef8; padding: 10px 12px; box-sizing: border-box; }
 textarea { min-height: 88px; resize: vertical; }
+.photo-picker { display: flex; align-items: center; gap: 10px; }
+.icon-btn { width: var(--mvp-btn-h, 44px); min-width: var(--mvp-btn-h, 44px); padding: 0; font-size: 18px; }
+.hidden-input { display: none; }
 .row, .hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn { min-height: var(--mvp-btn-h, 44px); border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #e8eef8; padding: 0 12px; }
 .btn.primary { border-color: rgba(240,190,100,.46); color: #0c1728; background: linear-gradient(145deg, #f3d89f, #e9c57b); font-weight: 700; }

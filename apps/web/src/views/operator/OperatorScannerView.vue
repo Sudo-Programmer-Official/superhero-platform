@@ -86,7 +86,7 @@
     <article class="manual-card">
       <p class="manual-title">Manual code entry</p>
       <div class="manual-row">
-        <input v-model="manualCode" type="text" placeholder="Enter code" />
+        <input v-model="manualCode" type="text" placeholder="Enter attendee pass code" />
         <button class="btn primary" type="button" :disabled="!canSubmitManual" @click="redeemCode(manualCode)">
           {{ isSubmitting ? 'Validating…' : 'Redeem' }}
         </button>
