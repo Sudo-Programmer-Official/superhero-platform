@@ -8,7 +8,7 @@
       <span class="state-pill" :class="`is-${scannerState}`">{{ stateLabel }}</span>
     </template>
 
-    <div class="redemptions__grid">
+    <div class="redemptions__grid" :class="{ 'is-operator': isOperatorMode }">
       <PaddedSectionCard class="scanner-card">
         <h2>Scanner</h2>
 
@@ -100,7 +100,7 @@
         </div>
       </PaddedSectionCard>
 
-      <PaddedSectionCard class="manual-card">
+      <PaddedSectionCard v-if="!isOperatorMode || scannerState !== 'scanning'" class="manual-card">
         <h2>Manual fallback</h2>
         <p class="muted">If camera access is denied, enter redemption code manually.</p>
 
@@ -116,7 +116,7 @@
         </div>
       </PaddedSectionCard>
 
-      <PaddedSectionCard class="history-card">
+      <PaddedSectionCard v-if="!isOperatorMode || scannerState !== 'scanning'" class="history-card">
         <div class="history-head">
           <h2>Recent redemptions</h2>
           <span>{{ history.length }}</span>
@@ -173,6 +173,7 @@ const {
   teardownScanner
 } = useRedemptionFlow();
 const scannerVideo = useTemplateRef<HTMLVideoElement>("scannerVideo");
+const isOperatorMode = route.query.mode === "operator";
 
 function formatTime(value: string): string {
   return new Date(value).toLocaleString();
@@ -209,6 +210,10 @@ onBeforeUnmount(() => {
     "scanner history";
   gap: 20px;
 }
+.redemptions__grid.is-operator {
+  grid-template-columns: 1fr;
+  grid-template-areas: "scanner";
+}
 .scanner-card { grid-area: scanner; }
 .manual-card { grid-area: manual; }
 .history-card { grid-area: history; }
@@ -225,6 +230,13 @@ onBeforeUnmount(() => {
   place-items: center;
   color: rgba(255,255,255,.62);
   overflow: hidden;
+}
+.redemptions__grid.is-operator .camera-placeholder {
+  height: min(72dvh, 620px);
+}
+.redemptions__grid.is-operator .scanner-card {
+  border-color: rgba(240,190,100,.2);
+  box-shadow: 0 22px 50px rgba(0,0,0,.35);
 }
 .camera-placeholder::after {
   content: "";

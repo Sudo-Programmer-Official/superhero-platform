@@ -254,6 +254,7 @@ export function useRedemptionFlow() {
           statusNote.value = `Previously redeemed at ${at}.`;
           scannerState.value = "already_redeemed";
           triggerHaptic("warning");
+          showToast("Already redeemed. No new action required.", "warning");
           pushHistory(code, "already_redeemed");
           return;
         }
@@ -262,6 +263,7 @@ export function useRedemptionFlow() {
           statusNote.value = `Pass expired at ${at}.`;
           scannerState.value = "expired";
           triggerHaptic("warning");
+          showToast("Pass is expired.", "warning");
           pushHistory(code, "expired");
           return;
         }
@@ -286,6 +288,7 @@ export function useRedemptionFlow() {
         scannerState.value = "invalid";
         statusNote.value = "Code not found or invalid.";
         triggerHaptic("error");
+        showToast("Invalid pass code.", "error");
         pushHistory(code, "invalid");
         return;
       }

@@ -1,4 +1,5 @@
 import { computed } from "vue";
+import { OPERATOR_MODE_ENABLED } from "../config/features";
 import { normalizeAdminRole } from "../admin/domain/permissions";
 import { sessionState } from "../stores/session";
 
@@ -14,6 +15,7 @@ export type PlatformRole =
 
 export function getPostLoginRoute(role?: string | null): { name: string } {
   const current = (role || "customer") as PlatformRole;
+  if (current === "practitioner" && OPERATOR_MODE_ENABLED) return { name: "operator-share" };
   if (current === "super_admin") return { name: "admin-overview" };
   if (current === "finance_admin") return { name: "admin-payouts" };
   if (current === "support_admin") return { name: "admin-support" };

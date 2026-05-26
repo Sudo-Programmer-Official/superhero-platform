@@ -1,4 +1,5 @@
 import { getPostLoginRoute } from "../composables/usePermissions";
+import { OPERATOR_MODE_ENABLED } from "../config/features";
 
 export type GuardState = {
   ready: boolean;
@@ -33,6 +34,14 @@ export function evaluateRouteGuard(
   }
   if (to.name === "onboarding" && state.token && state.me?.practitioner_id) {
     return getPostLoginRoute(state.me?.role);
+  }
+  if (
+    OPERATOR_MODE_ENABLED &&
+    state.me?.role === "practitioner" &&
+    state.me?.practitioner_id &&
+    (to.name === "dashboard" || to.name === "deals" || to.name === "bookings")
+  ) {
+    return { name: "operator-share" };
   }
 
   const allowedRoles = to.meta.roles as string[] | undefined;

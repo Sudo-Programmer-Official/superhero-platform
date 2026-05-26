@@ -4,6 +4,7 @@ import { adminRoutes } from "./admin.routes";
 import { authRoutes } from "./auth.routes";
 import { dashboardRoutes } from "./dashboard.routes";
 import { evaluateRouteGuard } from "./guard";
+import { operatorRoutes } from "./operator.routes";
 import { publicRoutes } from "./public.routes";
 
 initSessionWatcher();
@@ -13,6 +14,7 @@ const router = createRouter({
   routes: [
     ...publicRoutes,
     ...authRoutes,
+    ...operatorRoutes,
     ...dashboardRoutes,
     ...adminRoutes
   ]
