@@ -49,7 +49,8 @@
       <p v-if="errorText" class="error">{{ errorText }}</p>
       <div class="nav-row">
         <button class="btn" :disabled="step === 1" @click="step -= 1">Back</button>
-        <button class="btn primary" :disabled="step === 5" @click="step += 1">Continue</button>
+        <button v-if="step < 5" class="btn primary" @click="goNextStep">Continue</button>
+        <button v-else class="btn" type="button" @click="closeAndReturn">Done</button>
       </div>
     </article>
 
@@ -133,8 +134,38 @@ function endIso(): string {
   return new Date(start + minutes * 60_000).toISOString();
 }
 
+function goNextStep() {
+  errorText.value = "";
+  if (step.value === 1 && !form.image.trim()) {
+    errorText.value = "Add a cover image URL to continue.";
+    return;
+  }
+  if (step.value === 2 && !form.title.trim()) {
+    errorText.value = "Add a title to continue.";
+    return;
+  }
+  if (step.value === 3 && (!form.price || !form.capacity)) {
+    errorText.value = "Add price and spots to continue.";
+    return;
+  }
+  if (step.value === 4 && !form.startsAt) {
+    errorText.value = "Add start date/time to continue.";
+    return;
+  }
+  step.value += 1;
+}
+
 async function quickPublish() {
-  if (!sessionState.token || !sessionState.me?.practitioner_id || !canPublish.value) return;
+  if (!sessionState.token || !sessionState.me?.practitioner_id) {
+    errorText.value = "Session expired. Sign in again.";
+    showToast(errorText.value, "error");
+    return;
+  }
+  if (!canPublish.value) {
+    errorText.value = "Missing required fields: title, price, spots, and start date/time.";
+    showToast(errorText.value, "warning");
+    return;
+  }
   publishing.value = true;
   errorText.value = "";
   try {
@@ -213,6 +244,7 @@ textarea { min-height: 92px; }
 .grid { display: grid; gap: 10px; }
 .btn { min-height: var(--mvp-btn-h, 44px); border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #e8eef8; padding: 0 12px; }
 .btn.primary { border-color: rgba(240,190,100,.46); color: #0c1728; background: linear-gradient(145deg, #f3d89f, #e9c57b); font-weight: 700; }
+.btn:disabled { opacity: .52; cursor: not-allowed; }
 .nav-row { display: flex; justify-content: space-between; gap: 8px; }
 .error { margin: 0; color: #ffb2b2; }
 .preview .cover { width: 100%; height: 180px; border-radius: 12px; object-fit: cover; display: block; }

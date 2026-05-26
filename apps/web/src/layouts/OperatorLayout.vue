@@ -10,8 +10,8 @@
     </main>
 
     <nav class="operator-nav" aria-label="Operator navigation">
-      <RouterLink class="tab" :class="{ 'is-active': route.name === 'operator-share' }" to="/operator/share">Share</RouterLink>
-      <RouterLink class="tab" :class="{ 'is-active': route.name === 'operator-wallet' }" to="/operator/wallet">Wallet</RouterLink>
+      <RouterLink class="tab" :class="{ 'is-active': isShareTabActive }" to="/operator/share">Share</RouterLink>
+      <RouterLink class="tab" :class="{ 'is-active': isWalletTabActive }" to="/operator/wallet">Wallet</RouterLink>
     </nav>
 
     <div class="tools-overlay" :class="{ 'is-open': toolsOpen }" @click="toolsOpen = false"></div>
@@ -33,12 +33,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
 const router = useRouter();
 const toolsOpen = ref(false);
+const isShareTabActive = computed(() => String(route.name || "").startsWith("operator-share") || String(route.name || "") === "operator-offer-create");
+const isWalletTabActive = computed(() => String(route.name || "").startsWith("operator-wallet"));
 
 function goLegacy() {
   void router.push({ name: "dashboard" });
@@ -141,15 +143,19 @@ function goLegacy() {
 .tab {
   min-height: 44px;
   border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.03);
   display: grid;
   place-items: center;
-  color: rgba(233, 241, 252, 0.72);
+  color: rgba(233, 241, 252, 0.64);
   text-decoration: none;
   font-weight: 600;
 }
 .tab.is-active {
+  border-color: rgba(240,190,100,.55);
   background: linear-gradient(145deg, #f3d89f, #e9c57b);
   color: #0c1728;
+  box-shadow: 0 8px 18px rgba(0,0,0,.22);
 }
 @media (min-width: 1024px) {
   .operator-shell { max-width: 720px; margin: 0 auto; border-inline: 1px solid rgba(255,255,255,.08); }
