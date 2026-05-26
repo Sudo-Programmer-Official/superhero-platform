@@ -56,6 +56,28 @@ export type PractitionerUpdatePayload = {
   location?: string | null;
 };
 
+export type PresignUploadRequest = {
+  folder: "practitioners" | "deals" | "wallet-assets" | "branding" | "temp";
+  filename: string;
+  content_type: string;
+  content_length: number;
+};
+
+export type PresignUploadResponse = {
+  object_key: string;
+  upload_url: string;
+  content_type: string;
+  expires_in: number;
+  max_content_length: number;
+};
+
+export type FinalizeAssetRequest = {
+  target_type: "practitioner" | "deal_card";
+  target_id: string;
+  field_name: "profile_image" | "image";
+  object_key: string;
+};
+
 export type DealCardCreatePayload = {
   practitioner_id: string;
   title: string;
@@ -290,6 +312,36 @@ export async function updatePractitioner(
   });
   if (!res.ok) throw new Error(`Failed update practitioner: ${res.status}`);
   return res.json() as Promise<PractitionerPublicPayload>;
+}
+
+export async function presignUpload(token: string, payload: PresignUploadRequest): Promise<PresignUploadResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/storage/presign-upload`, {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Failed presign upload: ${res.status}`);
+  return res.json() as Promise<PresignUploadResponse>;
+}
+
+export async function uploadFileToPresignedUrl(uploadUrl: string, file: File, contentType: string): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": contentType
+    },
+    body: file
+  });
+  if (!res.ok) throw new Error(`Failed upload binary: ${res.status}`);
+}
+
+export async function finalizeAsset(token: string, payload: FinalizeAssetRequest): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/v1/storage/finalize-asset`, {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(`Failed finalize asset: ${res.status}`);
 }
 
 export async function createCheckoutSession(

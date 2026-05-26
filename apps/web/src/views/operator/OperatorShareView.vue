@@ -34,18 +34,24 @@
           <input v-model="name" type="text" placeholder="Enter your display name" />
         </label>
         <label>
-          <span>Profile photo</span>
-          <div class="photo-picker">
-            <button class="btn icon-btn" type="button" @click="openPhotoPicker" aria-label="Choose profile photo">
-              📷
+          <span>Photo</span>
+          <div class="upload-tile" :class="{ uploading: uploadingAvatar, uploaded: avatarUploadState === 'uploaded' }">
+            <button class="tile-trigger" type="button" @click="openPhotoPicker" :disabled="uploadingAvatar" aria-label="Choose profile photo">
+              <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" alt="Profile photo" class="tile-image" />
+              <span v-else class="tile-icon">📷</span>
             </button>
-            <p class="hint">{{ avatarUrl ? "Photo selected" : "Tap camera to choose from photos" }}</p>
+            <div class="tile-meta">
+              <p class="hint">{{ uploadingAvatar ? "Uploading..." : avatarUploadState === "uploaded" ? "Uploaded" : "Add photo" }}</p>
+              <button v-if="avatarPreviewUrl" class="btn change-btn" type="button" :disabled="uploadingAvatar" @click="openPhotoPicker">
+                Change photo
+              </button>
+            </div>
           </div>
           <input
             ref="photoInput"
             class="hidden-input"
             type="file"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             capture="environment"
             @change="onPhotoSelected"
           />
@@ -94,7 +100,15 @@
 import { computed, onMounted, ref, useTemplateRef } from "vue";
 import { useRouter } from "vue-router";
 import { formatLocalDateTime, formatMoney } from "../../domain/deal";
-import { fetchPublicPractitioner, listDeals, updatePractitioner, type DealCardPayload } from "../../services/api";
+import {
+  fetchPublicPractitioner,
+  finalizeAsset,
+  listDeals,
+  presignUpload,
+  updatePractitioner,
+  uploadFileToPresignedUrl,
+  type DealCardPayload
+} from "../../services/api";
 import { sessionState } from "../../stores/session";
 import { showToast } from "../../stores/toast";
 
@@ -107,8 +121,11 @@ const deals = ref<DealCardPayload[]>([]);
 
 const name = ref("");
 const avatarUrl = ref("");
+const avatarPreviewUrl = ref("");
 const bio = ref("");
 const photoInput = useTemplateRef<HTMLInputElement>("photoInput");
+const uploadingAvatar = ref(false);
+const avatarUploadState = ref<"idle" | "uploaded">("idle");
 
 const publishedDeals = computed(() => deals.value.filter((d) => d.status === "published"));
 const primaryOffer = computed(() => publishedDeals.value[0] || null);
@@ -139,6 +156,7 @@ async function load() {
       const p = await fetchPublicPractitioner(slug);
       name.value = p.name || "";
       avatarUrl.value = p.avatar_url || p.profile_image || "";
+      avatarPreviewUrl.value = avatarUrl.value;
       bio.value = p.bio || "";
     }
   } catch (err) {
@@ -154,7 +172,6 @@ async function saveProfile() {
   try {
     await updatePractitioner(sessionState.token, sessionState.me.practitioner_id, {
       name: name.value || undefined,
-      avatar_url: avatarUrl.value || null,
       bio: bio.value || null
     });
     saveState.value = "Profile updated.";
@@ -225,21 +242,44 @@ async function onPhotoSelected(event: Event) {
     showToast("Please select an image file.", "warning");
     return;
   }
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const result = String(reader.result || "");
-    if (!result) {
-      showToast("Could not read image.", "error");
-      return;
-    }
-    avatarUrl.value = result;
-    showToast("Photo selected. Tap Save to apply.", "success");
+  if (!sessionState.token || !sessionState.me?.practitioner_id) {
+    showToast("Session expired. Sign in again.", "error");
+    return;
+  }
+
+  const previousPreview = avatarPreviewUrl.value;
+  const localPreviewUrl = URL.createObjectURL(file);
+  avatarPreviewUrl.value = localPreviewUrl;
+  uploadingAvatar.value = true;
+  avatarUploadState.value = "idle";
+
+  try {
+    const presigned = await presignUpload(sessionState.token, {
+      folder: "practitioners",
+      filename: file.name || "profile-photo.jpg",
+      content_type: file.type || "image/jpeg",
+      content_length: file.size
+    });
+
+    await uploadFileToPresignedUrl(presigned.upload_url, file, presigned.content_type);
+    await finalizeAsset(sessionState.token, {
+      target_type: "practitioner",
+      target_id: sessionState.me.practitioner_id,
+      field_name: "profile_image",
+      object_key: presigned.object_key
+    });
+
+    avatarUrl.value = presigned.object_key;
+    avatarUploadState.value = "uploaded";
+    showToast("Profile photo uploaded.", "success");
+  } catch (err) {
+    avatarPreviewUrl.value = previousPreview;
+    URL.revokeObjectURL(localPreviewUrl);
+    showToast(`Photo upload failed: ${String(err)}`, "error");
+  } finally {
+    uploadingAvatar.value = false;
     if (input) input.value = "";
-  };
-  reader.onerror = () => {
-    showToast("Could not read image.", "error");
-  };
-  reader.readAsDataURL(file);
+  }
 }
 
 onMounted(() => {
@@ -265,7 +305,34 @@ label span { font-size: 12px; color: rgba(230,238,249,.72); text-transform: uppe
 input, textarea { width: 100%; min-height: var(--mvp-btn-h, 44px); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(7,14,24,.72); color: #e8eef8; padding: 10px 12px; box-sizing: border-box; }
 textarea { min-height: 88px; resize: vertical; }
 .photo-picker { display: flex; align-items: center; gap: 10px; }
-.icon-btn { width: var(--mvp-btn-h, 44px); min-width: var(--mvp-btn-h, 44px); padding: 0; font-size: 18px; }
+.upload-tile {
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  background: rgba(7,14,24,.72);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.upload-tile.uploading { border-color: rgba(113,182,255,.48); box-shadow: 0 0 0 1px rgba(113,182,255,.22) inset; }
+.upload-tile.uploaded { border-color: rgba(82,213,139,.44); box-shadow: 0 0 0 1px rgba(82,213,139,.2) inset; }
+.tile-trigger {
+  width: 66px;
+  height: 66px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.04);
+  color: #e8eef8;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.tile-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile-icon { font-size: 22px; line-height: 1; }
+.tile-meta { display: grid; gap: 6px; }
+.change-btn { min-height: 36px; padding: 0 10px; font-size: 12px; border-radius: 9px; width: fit-content; }
 .hidden-input { display: none; }
 .row, .hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn { min-height: var(--mvp-btn-h, 44px); border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #e8eef8; padding: 0 12px; }
