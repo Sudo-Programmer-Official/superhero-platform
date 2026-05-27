@@ -224,7 +224,7 @@ function previewPrimary() {
 }
 
 function createOffer() {
-  void router.push({ name: "operator-offer-create" });
+  void router.push({ name: "app-deals-create" });
 }
 
 function openPhotoPicker() {

@@ -138,7 +138,7 @@ async function onSubmit() {
       await router.push(next);
       return;
     }
-    await router.push("/dashboard");
+    await router.push("/app/deals");
   } catch (err) {
     errorMessage.value = mapAuthError(err);
   } finally {

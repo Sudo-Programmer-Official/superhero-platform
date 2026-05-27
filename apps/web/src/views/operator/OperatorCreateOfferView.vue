@@ -217,12 +217,12 @@ function previewPublished() {
 }
 
 function openWalletTab() {
-  void router.push({ name: "operator-wallet" });
+  void router.push({ name: "app-wallet" });
 }
 
 function closeAndReturn() {
   successSheetOpen.value = false;
-  void router.push({ name: "operator-share" });
+  void router.push({ name: "app-deals" });
 }
 </script>
 

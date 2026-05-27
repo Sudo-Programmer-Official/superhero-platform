@@ -27,6 +27,10 @@
       </aside>
 
       <main class="dashboard-main">
+        <div class="app-bridge">
+          <p>New app shell is now live.</p>
+          <RouterLink to="/app/deals">Switch to new app</RouterLink>
+        </div>
         <RouterView />
       </main>
     </div>
@@ -176,6 +180,23 @@ const isDrawerOpen = ref(false);
   overflow-x: hidden;
   position: relative;
 }
+.app-bridge {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  margin: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(8,14,24,.84);
+  backdrop-filter: blur(10px);
+}
+.app-bridge p { margin: 0; font-size: 13px; color: rgba(255,255,255,.72); }
+.app-bridge a { color: #f4d8a7; text-decoration: none; font-size: 13px; font-weight: 600; }
 
 .drawer-toggle,
 .drawer-overlay,

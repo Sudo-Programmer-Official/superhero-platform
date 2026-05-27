@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { initSessionWatcher, sessionState } from "../stores/session";
 import { adminRoutes } from "./admin.routes";
+import { appRoutes } from "./app.routes";
 import { authRoutes } from "./auth.routes";
 import { dashboardRoutes } from "./dashboard.routes";
 import { evaluateRouteGuard } from "./guard";
@@ -14,6 +15,7 @@ const router = createRouter({
   routes: [
     ...publicRoutes,
     ...authRoutes,
+    ...appRoutes,
     ...operatorRoutes,
     ...dashboardRoutes,
     ...adminRoutes

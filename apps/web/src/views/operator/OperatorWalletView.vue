@@ -36,8 +36,8 @@
           <p class="meta" v-if="state(pass) === 'active'">Ready for check-in</p>
           <p class="meta" v-if="state(pass) === 'redeemed'">Checked in successfully</p>
           <div class="actions">
-            <button class="btn" @click="copyCode(pass.qr_code)">Copy QR</button>
-            <button class="btn" @click="showQr(pass.qr_code)">Fullscreen QR</button>
+            <button class="btn primary" @click="showQr(pass.qr_code)">Open QR</button>
+            <button class="btn" @click="copyCode(pass.qr_code)">•••</button>
           </div>
         </article>
       </div>
@@ -101,7 +101,7 @@ async function refresh() {
 }
 
 function goScanner() {
-  void router.push({ name: "operator-scanner" });
+  void router.push({ name: "app-redemptions" });
 }
 
 async function copyCode(code: string) {

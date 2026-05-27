@@ -120,7 +120,7 @@ const {
 const scannerVideo = useTemplateRef<HTMLVideoElement>("scannerVideo");
 
 function goWallet() {
-  void router.push({ name: "operator-wallet" });
+  void router.push({ name: "app-wallet" });
 }
 
 function formatTime(value: string): string {

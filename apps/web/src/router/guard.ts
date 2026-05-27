@@ -50,9 +50,9 @@ export async function evaluateRouteGuard(
     OPERATOR_MODE_ENABLED &&
     state.me?.role === "practitioner" &&
     state.me?.practitioner_id &&
-    (to.name === "dashboard" || to.name === "deals" || to.name === "bookings")
+    (to.name === "dashboard" || to.name === "deals" || to.name === "bookings" || to.path === "/app")
   ) {
-    return { name: "operator-share" };
+    return { name: "app-deals" };
   }
 
   const allowedRoles = to.meta.roles as string[] | undefined;
