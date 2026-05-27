@@ -12,7 +12,32 @@
     <article class="card">
       <template v-if="step === 1">
         <h2>Step 1 · Image</h2>
-        <label><span>Cover image URL</span><input v-model="form.image" type="url" placeholder="https://..." /></label>
+        <div class="upload-tile" :class="{ uploading: uploadingImage, uploaded: imageUploadState === 'uploaded' }">
+          <input
+            ref="coverFileInput"
+            class="sr-only-file"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            @change="onCoverFileSelected"
+          />
+          <button class="tile-trigger" type="button" @click="openCoverPicker" :disabled="uploadingImage" aria-label="Choose cover image">
+            <span class="camera-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 8h3l1.2-2h7.6L17 8h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z" />
+                <circle cx="12" cy="14" r="3.5" />
+              </svg>
+            </span>
+          </button>
+          <div class="tile-copy">
+            <p class="tile-title">Cover image</p>
+            <p class="hint">{{ uploadingImage ? "Uploading..." : imageUploadState === "uploaded" ? "Uploaded" : "Tap to upload" }}</p>
+            <button v-if="localCoverPreviewUrl || form.image" class="btn change-btn" type="button" :disabled="uploadingImage" @click="openCoverPicker">
+              Change photo
+            </button>
+          </div>
+        </div>
+        <label><span>Or paste image URL (optional)</span><input v-model="form.image" type="url" placeholder="https://..." /></label>
       </template>
       <template v-else-if="step === 2">
         <h2>Step 2 · Title & Description</h2>
@@ -86,7 +111,7 @@
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { formatLocalDateTime, formatTimezone, formatMoney } from "../../domain/deal";
-import { createDeal, updateDealStatus } from "../../services/api";
+import { createDeal, finalizeAsset, presignUpload, updateDealStatus, uploadFileToPresignedUrl } from "../../services/api";
 import { sessionState } from "../../stores/session";
 import { showToast } from "../../stores/toast";
 
@@ -96,6 +121,11 @@ const publishing = ref(false);
 const errorText = ref("");
 const shareUrl = ref("");
 const successSheetOpen = ref(false);
+const coverFileInput = ref<HTMLInputElement | null>(null);
+const uploadingImage = ref(false);
+const imageUploadState = ref<"idle" | "uploaded">("idle");
+const localCoverPreviewUrl = ref("");
+const pendingImageUpload = ref<{ objectKey: string } | null>(null);
 
 const form = reactive({
   image: "",
@@ -136,8 +166,8 @@ function endIso(): string {
 
 function goNextStep() {
   errorText.value = "";
-  if (step.value === 1 && !form.image.trim()) {
-    errorText.value = "Add a cover image URL to continue.";
+  if (step.value === 1 && !form.image.trim() && !pendingImageUpload.value && !localCoverPreviewUrl.value) {
+    errorText.value = "Add a cover image to continue.";
     return;
   }
   if (step.value === 2 && !form.title.trim()) {
@@ -153,6 +183,46 @@ function goNextStep() {
     return;
   }
   step.value += 1;
+}
+
+function openCoverPicker() {
+  coverFileInput.value?.click();
+}
+
+async function onCoverFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  if (!sessionState.token) {
+    showToast("Session expired. Sign in again.", "error");
+    return;
+  }
+  uploadingImage.value = true;
+  errorText.value = "";
+  try {
+    const localPreview = URL.createObjectURL(file);
+    localCoverPreviewUrl.value = localPreview;
+    form.image = localPreview;
+    imageUploadState.value = "idle";
+
+    const presign = await presignUpload(sessionState.token, {
+      folder: "deals",
+      filename: file.name,
+      content_type: file.type || "image/jpeg",
+      content_length: file.size
+    });
+    await uploadFileToPresignedUrl(presign.upload_url, file, presign.content_type || file.type || "image/jpeg");
+    pendingImageUpload.value = { objectKey: presign.object_key };
+    imageUploadState.value = "uploaded";
+    showToast("Cover image uploaded.", "success");
+  } catch (err) {
+    imageUploadState.value = "idle";
+    pendingImageUpload.value = null;
+    showToast(`Image upload failed: ${String(err)}`, "error");
+  } finally {
+    uploadingImage.value = false;
+    if (input) input.value = "";
+  }
 }
 
 async function quickPublish() {
@@ -173,7 +243,7 @@ async function quickPublish() {
       practitioner_id: sessionState.me.practitioner_id,
       title: form.title,
       description: form.description || null,
-      image: form.image || null,
+      image: pendingImageUpload.value ? null : (form.image || null),
       location: form.location || null,
       timezone: form.timezone,
       price: form.price,
@@ -184,6 +254,14 @@ async function quickPublish() {
       end_time: endIso(),
       wallet_enabled: true
     });
+    if (pendingImageUpload.value) {
+      await finalizeAsset(sessionState.token, {
+        target_type: "deal_card",
+        target_id: draft.id,
+        field_name: "image",
+        object_key: pendingImageUpload.value.objectKey
+      });
+    }
     const published = await updateDealStatus(sessionState.token, draft.id, "published");
     shareUrl.value = `${window.location.origin}${published.share_link || `/openmat/${sessionState.me?.practitioner_slug}/${published.slug}`}`;
     showToast("Offer published.", "success");
@@ -241,6 +319,43 @@ label { display: grid; gap: 6px; }
 label span { font-size: 12px; color: rgba(230,238,249,.72); text-transform: uppercase; letter-spacing: .08em; }
 input, textarea, select { width: 100%; min-height: var(--mvp-btn-h, 44px); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(7,14,24,.72); color: #e8eef8; padding: 10px 12px; box-sizing: border-box; }
 textarea { min-height: 92px; }
+.upload-tile {
+  border: 1px dashed rgba(255,255,255,.24);
+  border-radius: 14px;
+  background: rgba(255,255,255,.03);
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.upload-tile.uploading { border-color: rgba(113,182,255,.48); box-shadow: 0 0 0 1px rgba(113,182,255,.22) inset; }
+.upload-tile.uploaded { border-color: rgba(82,213,139,.44); box-shadow: 0 0 0 1px rgba(82,213,139,.2) inset; }
+.sr-only-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  overflow: hidden;
+}
+.tile-trigger {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.04);
+  color: rgba(233,241,252,.86);
+  display: grid;
+  place-items: center;
+}
+.camera-icon, .camera-icon svg { width: 22px; height: 22px; display: block; }
+.tile-copy { display: grid; gap: 4px; }
+.tile-title { margin: 0; font-size: 14px; font-weight: 650; }
+.hint { margin: 0; font-size: 12px; color: rgba(230,238,249,.68); }
+.change-btn { justify-self: start; min-height: 36px; font-size: 12px; }
 .grid { display: grid; gap: 10px; }
 .btn { min-height: var(--mvp-btn-h, 44px); border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #e8eef8; padding: 0 12px; }
 .btn.primary { border-color: rgba(240,190,100,.46); color: #0c1728; background: linear-gradient(145deg, #f3d89f, #e9c57b); font-weight: 700; }
