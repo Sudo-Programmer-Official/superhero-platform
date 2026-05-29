@@ -8,8 +8,8 @@
       <h1>{{ name || "Your profile" }}</h1>
       <p class="sub">{{ bio || "Add a short bio for your public profile." }}</p>
       <div class="actions">
+        <button class="btn primary" type="button" @click="shareProfile">Share Profile</button>
         <button class="btn" type="button" @click="editing = !editing">{{ editing ? "Done" : "Edit" }}</button>
-        <button class="btn" type="button" @click="shareProfile">Share profile</button>
       </div>
 
       <div v-if="editing" class="edit-grid">
@@ -57,7 +57,19 @@
 
     <article class="card">
       <p class="eyebrow">Advanced</p>
-      <button class="btn" type="button" @click="openAdvanced">Open advanced workspace</button>
+      <button class="btn" type="button" @click="openAdvanced">Advanced Workspace</button>
+    </article>
+
+    <article class="card">
+      <p class="eyebrow">Recent activity</p>
+      <p v-if="activityLoading" class="sub">Loading activity…</p>
+      <p v-else-if="recentActivity.length === 0" class="sub">No recent activity.</p>
+      <div v-else class="activity-list">
+        <article v-for="item in recentActivity" :key="item.id" class="activity-row">
+          <p>{{ item.label }}</p>
+          <span>{{ item.time }}</span>
+        </article>
+      </div>
     </article>
   </section>
 </template>
@@ -66,7 +78,8 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { formatLocalDateTime } from "../domain/deal";
-import { fetchPublicPractitioner, listDeals, updatePractitioner, uploadPractitionerImage, type DealCardPayload } from "../services/api";
+import { activityLabel, activityTime, type ActivityEvent } from "../domain/activity";
+import { fetchPublicPractitioner, listActivityEvents, listDeals, updatePractitioner, uploadPractitionerImage, type DealCardPayload } from "../services/api";
 import { sessionState } from "../stores/session";
 import { showToast } from "../stores/toast";
 
@@ -80,8 +93,13 @@ const photoInput = ref<HTMLInputElement | null>(null);
 const uploadingAvatar = ref(false);
 const avatarUploadState = ref<"idle" | "uploaded">("idle");
 const deals = ref<DealCardPayload[]>([]);
+const activityLoading = ref(false);
+const activityEvents = ref<ActivityEvent[]>([]);
 
 const primaryOffer = computed(() => deals.value.find((d) => d.status === "published") || null);
+const recentActivity = computed(() =>
+  activityEvents.value.slice(0, 5).map((event) => ({ id: event.id, label: activityLabel(event), time: activityTime(event.created_at) }))
+);
 const initials = computed(() => {
   const value = (name.value || "OM").trim();
   return value.split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() || "").join("") || "OM";
@@ -106,6 +124,13 @@ async function load() {
     name.value = p.name || "";
     bio.value = p.bio || "";
     avatarUrl.value = p.avatar_url || p.profile_image || "";
+  }
+  activityLoading.value = true;
+  try {
+    const page = await listActivityEvents(sessionState.token);
+    activityEvents.value = page.items;
+  } finally {
+    activityLoading.value = false;
   }
 }
 
@@ -257,4 +282,8 @@ textarea { min-height: 88px; resize: vertical; }
 .btn { min-height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #e8eef8; padding: 0 12px; }
 .btn.primary { border-color: rgba(240,190,100,.46); color: #0c1728; background: linear-gradient(145deg, #f3d89f, #e9c57b); font-weight: 700; }
 .btn.ghost { min-height: 36px; font-size: 12px; }
+.activity-list { display: grid; gap: 8px; text-align: left; }
+.activity-row { border: 1px solid rgba(255,255,255,.1); border-radius: 10px; background: rgba(255,255,255,.03); padding: 10px; display: flex; justify-content: space-between; gap: 10px; }
+.activity-row p { margin: 0; }
+.activity-row span { color: rgba(230,238,249,.66); font-size: 12px; }
 </style>

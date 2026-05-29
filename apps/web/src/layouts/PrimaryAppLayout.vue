@@ -22,10 +22,6 @@
         <i class="icon" aria-hidden="true"><IconTicket /></i>
         <span>Deals</span>
       </RouterLink>
-      <RouterLink class="dock-item" :class="{ active: isActive('app-wallet') }" to="/app/wallet">
-        <i class="icon" aria-hidden="true"><IconWallet /></i>
-        <span>Wallet</span>
-      </RouterLink>
       <RouterLink class="dock-item" :class="{ active: isActive('app-redemptions') }" to="/app/redemptions">
         <i class="icon" aria-hidden="true"><IconScan /></i>
         <span>Redemptions</span>
@@ -83,7 +79,6 @@ const IconBase = defineComponent({
   }
 });
 const IconTicket = () => h(IconBase, { path: "M3 9a3 3 0 0 0 0 6v4h18v-4a3 3 0 0 0 0-6V5H3z M12 5v14" });
-const IconWallet = () => h(IconBase, { path: "M3 7h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3z M3 7V5a2 2 0 0 1 2-2h13 M16 13h5" });
 const IconScan = () => h(IconBase, { path: "M4 7V5h2 M20 7V5h-2 M4 17v2h2 M20 17v2h-2 M7 12h10" });
 const IconDollar = () => h(IconBase, { path: "M12 3v18 M16 7c0-1.7-1.8-3-4-3s-4 1.3-4 3 1.8 3 4 3 4 1.3 4 3-1.8 3-4 3-4-1.3-4-3" });
 const IconUser = () => h(IconBase, { path: "M20 21a8 8 0 0 0-16 0 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8" });
@@ -96,7 +91,7 @@ const IconPlus = () => h(IconBase, { path: "M12 5v14 M5 12h14" });
 .brand { margin: 0; font-weight: 700; letter-spacing: -.02em; font-size: 20px; }
 .advanced-btn { min-height: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05); color: #dbe5f3; padding: 0 12px; }
 .app-main { padding: 12px; max-width: 760px; margin: 0 auto; }
-.dock { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 25; border-radius: 18px; border: 1px solid rgba(255,255,255,.14); background: rgba(7,14,24,.92); backdrop-filter: blur(12px); padding: 8px; display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 6px; }
+.dock { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 25; border-radius: 18px; border: 1px solid rgba(255,255,255,.14); background: rgba(7,14,24,.92); backdrop-filter: blur(12px); padding: 8px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
 .dock-item { min-height: 54px; border-radius: 12px; text-decoration: none; color: rgba(233, 241, 252, 0.68); display: grid; justify-items: center; align-content: center; gap: 3px; border: 1px solid transparent; transition: all .18s ease; }
 .dock-item .icon { width: 20px; height: 20px; display: grid; }
 .dock-item .icon :deep(svg) { width: 20px; height: 20px; }
