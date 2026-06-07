@@ -31,6 +31,11 @@ Non-goals:
 - Show essentials first.
 - Move low-frequency actions behind overflow (`...`), details, or secondary surfaces.
 
+5. `Feel like posting, not operating software`
+- Create and share flows should read like a content composer.
+- Minimize setup fields that do not change the public result.
+- Hide policy, routing, and advanced operational controls until after publish.
+
 ## 3) Design Tokens (Use Existing Project Tokens)
 Use values from:
 - `apps/web/src/design-system/tokens/colors.css`
@@ -91,6 +96,11 @@ Use values from:
 - Avoid rows with 4+ equal-weight actions.
 - If >2 actions are needed, keep 2 visible and move the rest into overflow.
 
+### Content composer rule
+- If a screen is about creating or publishing a deal, make it feel closer to a story post than a dashboard form.
+- Prefer upload, title, discount, and publish as the first visible sequence.
+- Keep fields like capacity, booking rules, audience filters, and other advanced metadata secondary unless they are required for launch.
+
 ## 6) Screen Blueprints (MVP)
 ## 6.1 Deals
 Intent:
@@ -108,6 +118,20 @@ Avoid:
 - Dense management controls on each card.
 - Repetitive button walls.
 
+Canonical small-business use case:
+- The Haven Spa uploads a flyer image.
+- The owner enters a title, short offer, expiration date, and eligible services.
+- Publishing generates a public link such as `openmat.app/d/summer26`.
+- The deal card should surface only the few things the owner cares about:
+  - title
+  - claimed count
+  - redeemed count
+  - Share action
+- The design should not require promo-code management as part of the primary flow.
+
+Success signal:
+- The owner can create and share the deal in one short session without feeling like they are configuring software.
+
 ## 6.2 Redemptions
 Intent:
 - Fast check-in flow.
@@ -121,6 +145,12 @@ Must include:
 
 Avoid:
 - Heavy operational tables on the main screen.
+
+Canonical small-business use case:
+- Reception opens the scanner.
+- Customer shows the pass QR.
+- Operator gets an immediate validation result plus the deal name.
+- The recent activity feed is enough for day-to-day confidence; detailed logs stay behind secondary navigation.
 
 ## 6.3 Payouts
 Intent:
@@ -151,6 +181,22 @@ Must include:
 Advanced:
 - Keep advanced controls secondary.
 - Link to `Advanced Workspace` for legacy tools.
+
+## 6.5 Canonical Promotion Loop
+This is the primary MVP loop for a local business:
+1. Create Deal
+2. Share Deal
+3. Claim Pass
+4. Redeem Pass
+5. Business Gets Customer
+6. Business Creates More Deals
+
+The UI should support this loop with minimal friction and visible proof of progress:
+- Create should be fast.
+- Share should be one tap.
+- Claim should be short and mobile-friendly.
+- Redeem should be scanner-first.
+- Progress should be visible through claimed and redeemed counts.
 
 ## 7) Forms and Inputs
 Rules:
@@ -218,4 +264,3 @@ When adding a new feature:
 3. Add advanced actions only after core flow feels effortless.
 4. Reuse existing tokens; do not add ad hoc colors/spacing first.
 5. If a flow gets complex, move power actions to Advanced Workspace.
-

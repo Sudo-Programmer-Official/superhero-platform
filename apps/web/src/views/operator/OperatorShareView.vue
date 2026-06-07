@@ -3,8 +3,8 @@
     <article class="card top">
       <p class="eyebrow">Deals</p>
       <h1>Chronological feed</h1>
-      <p class="sub">Most recent offer stays on top. Share directly from each card.</p>
-      <button class="btn primary" type="button" @click="createOffer">Create New Deal</button>
+      <p class="sub">This is the place to post offers and share them fast.</p>
+      <button class="btn primary" type="button" @click="createOffer">Create Deal</button>
     </article>
 
     <div v-if="loading" class="skeleton-list">
@@ -12,14 +12,20 @@
     </div>
     <p v-else-if="errorText" class="hint is-error">{{ errorText }}</p>
 
-    <article v-for="(deal, index) in feedDeals" :key="deal.id" class="card deal-card" :class="{ topdeal: index === 0 }">
-      <img v-if="deal.image" :src="deal.image" alt="Deal image" class="cover" />
-      <div v-else class="cover fallback"></div>
+    <article v-for="deal in feedDeals" :key="deal.id" class="card deal-card" :class="{ topdeal: deal.id === feedDeals[0]?.id }">
+      <img v-if="deal.cover" :src="deal.cover" alt="Deal cover" class="cover" />
+      <div v-else class="cover cover--fallback"></div>
+
       <div class="body">
         <p class="title">{{ deal.title }}</p>
-        <p class="meta">{{ formatDate(deal.start_time) }}<span v-if="deal.location"> · {{ deal.location }}</span></p>
-        <p class="meta">{{ formatMoney(deal.base_price, deal.currency) }} · {{ deal.remaining_slots }}/{{ deal.capacity }} left</p>
+        <p class="meta">{{ deal.offer }}</p>
+        <p class="meta">{{ deal.expiry }} · {{ deal.location }}</p>
+        <div class="metrics">
+          <span>Claimed {{ deal.claimed }}</span>
+          <span>Redeemed {{ deal.redeemed }}</span>
+        </div>
       </div>
+
       <div class="actions">
         <button class="btn" type="button" @click="shareOffer(deal.slug)">Share</button>
         <button class="btn" type="button" @click="previewOffer(deal.slug)">Preview</button>
@@ -32,37 +38,71 @@
       </div>
     </article>
 
-    <article v-if="feedDeals.length < 3" class="card create-next">
-      <p class="eyebrow">Next</p>
-      <h2>Create your next deal</h2>
-      <p class="sub">Keep the feed active with a new offer.</p>
-      <button class="btn primary" type="button" @click="createOffer">Create Offer</button>
+    <article v-if="feedDeals.length === 0 && !loading && !errorText" class="card empty-card">
+      <p class="eyebrow">Start here</p>
+      <h2>Post your first offer</h2>
+      <p class="sub">Upload a flyer, add the title, and publish to the feed.</p>
+      <button class="btn primary" type="button" @click="createOffer">Create Deal</button>
     </article>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { formatLocalDateTime, formatMoney } from "../../domain/deal";
-import { listDeals, type DealCardPayload } from "../../services/api";
+import { listDeals, listWalletPasses, type DealCardPayload, type WalletPassPayload } from "../../services/api";
 import { sessionState } from "../../stores/session";
 import { showToast } from "../../stores/toast";
+
+type FeedDeal = {
+  id: string;
+  slug: string;
+  cover: string | null;
+  title: string;
+  offer: string;
+  expiry: string;
+  location: string;
+  claimed: number;
+  redeemed: number;
+};
 
 const router = useRouter();
 const loading = ref(false);
 const errorText = ref("");
 const deals = ref<DealCardPayload[]>([]);
+const walletPasses = ref<WalletPassPayload[]>([]);
 
-const publishedDeals = computed(() =>
-  deals.value
-    .filter((d) => d.status === "published")
-    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
-);
-const feedDeals = computed(() => publishedDeals.value.slice(0, 3));
-function formatDate(value: string): string {
-  return formatLocalDateTime(value, "UTC");
-}
+const feedDeals = computed<FeedDeal[]>(() => {
+  const byDeal = new Map<string, { claimed: number; redeemed: number }>();
+  for (const pass of walletPasses.value) {
+    const key = pass.deal_id;
+    const current = byDeal.get(key) || { claimed: 0, redeemed: 0 };
+    current.claimed += 1;
+    if ((pass.pass_status || "").toLowerCase() === "redeemed" || (pass.redemption_status || "").toLowerCase() === "redeemed") {
+      current.redeemed += 1;
+    }
+    byDeal.set(key, current);
+  }
+
+  return deals.value
+    .filter((deal) => deal.status === "published")
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 6)
+    .map((deal) => {
+      const counts = byDeal.get(deal.id) || { claimed: 0, redeemed: 0 };
+      return {
+        id: deal.id,
+        slug: deal.slug,
+        cover: deal.cover_image || deal.image || null,
+        title: deal.title,
+        offer: deal.description || deal.cta_text || `from ${deal.price} ${deal.currency}`,
+        expiry: deal.expiration_time ? `Expires ${new Date(deal.expiration_time).toLocaleDateString()}` : `Expires ${new Date(deal.end_time).toLocaleDateString()}`,
+        location: deal.location || deal.location_name || "Location not set",
+        claimed: counts.claimed,
+        redeemed: counts.redeemed
+      };
+    });
+});
 
 function offerPath(slug: string): string {
   const practitionerSlug = sessionState.me?.practitioner_slug || "";
@@ -74,7 +114,9 @@ async function load() {
   loading.value = true;
   errorText.value = "";
   try {
-    deals.value = await listDeals(sessionState.token);
+    const [dealList, passList] = await Promise.all([listDeals(sessionState.token), listWalletPasses(sessionState.token)]);
+    deals.value = dealList;
+    walletPasses.value = passList;
   } catch (err) {
     errorText.value = `Failed to load deals: ${String(err)}`;
   } finally {
@@ -107,28 +149,43 @@ function previewOffer(slug: string) {
 
 onMounted(() => {
   void load();
+  window.addEventListener("focus", handleRefreshVisibility, { passive: true });
+  document.addEventListener("visibilitychange", handleRefreshVisibility);
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener("focus", handleRefreshVisibility);
+  document.removeEventListener("visibilitychange", handleRefreshVisibility);
+});
+
+function handleRefreshVisibility() {
+  if (document.visibilityState === "visible") {
+    void load();
+  }
+}
 </script>
 
 <style scoped>
-.stack { display: grid; gap: var(--mvp-gap, 14px); padding-bottom: 80px; }
-.card { border: 1px solid rgba(255,255,255,.12); border-radius: var(--mvp-radius, 16px); background: rgba(10, 20, 36, .72); padding: var(--mvp-card-pad, 16px); display: grid; gap: 12px; }
+.stack { display: grid; gap: 14px; padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px)); }
+.card { border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(10, 20, 36, .72); padding: 16px; display: grid; gap: 12px; }
 .top { background: linear-gradient(170deg, rgba(17, 37, 66, .9), rgba(9, 17, 30, .86)); }
 .eyebrow { margin: 0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #f4d8a7; }
 h1 { margin: 0; font-size: 28px; line-height: 1.06; letter-spacing: -0.02em; }
 .sub { margin: 0; color: rgba(230,238,249,.78); }
 .deal-card { padding: 0; overflow: hidden; }
-.cover { width: 100%; height: 170px; object-fit: cover; display: block; }
-.cover.fallback { background: linear-gradient(135deg, rgba(26,42,69,.8), rgba(8,13,24,.95)); }
+.cover { width: 100%; aspect-ratio: 1.15 / 1; object-fit: cover; display: block; }
+.cover--fallback { background: radial-gradient(circle at 30% 20%, rgba(240,190,100,.16), transparent 36%), linear-gradient(135deg, rgba(26,42,69,.8), rgba(8,13,24,.95)); }
 .body { padding: 12px 14px 0 14px; display: grid; gap: 4px; }
-.title { margin: 0; font-size: 23px; font-weight: 700; }
+.title { margin: 0; font-size: 23px; font-weight: 700; line-height: 1.06; }
 .meta { margin: 0; font-size: 13px; color: rgba(230,238,249,.72); }
+.metrics { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+.metrics span { border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: rgba(233,241,252,.82); padding: 6px 10px; font-size: 12px; }
 .actions { padding: 12px 14px 14px 14px; display: flex; gap: 8px; flex-wrap: wrap; }
 .overflow { position: relative; }
 .overflow summary {
   list-style: none;
   min-width: 44px;
-  min-height: var(--mvp-btn-h, 44px);
+  min-height: 44px;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.14);
   background: rgba(255,255,255,.05);
@@ -159,15 +216,14 @@ h1 { margin: 0; font-size: 28px; line-height: 1.06; letter-spacing: -0.02em; }
   text-align: left;
   padding: 0 10px;
 }
-.btn { min-height: var(--mvp-btn-h, 44px); border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #e8eef8; padding: 0 12px; }
+.btn { min-height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #e8eef8; padding: 0 12px; }
 .btn.primary { border-color: rgba(240,190,100,.46); color: #0c1728; background: linear-gradient(145deg, #f3d89f, #e9c57b); font-weight: 700; width: fit-content; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.deal-card.topdeal { border-color: rgba(240,190,100,.3); box-shadow: 0 0 0 1px rgba(240,190,100,.1) inset; }
-.create-next h2 { margin: 0; font-size: 22px; }
 .hint { margin: 0; color: rgba(230,238,249,.72); font-size: 13px; }
 .hint.is-error { color: #ffb2b2; }
 .skeleton-list { display: grid; gap: 8px; }
 .skeleton { height: 210px; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); }
 .shimmer { background-image: linear-gradient(100deg, rgba(255,255,255,.03) 20%, rgba(255,255,255,.1) 50%, rgba(255,255,255,.03) 80%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }
+.empty-card h2 { margin: 0; font-size: 22px; }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 </style>

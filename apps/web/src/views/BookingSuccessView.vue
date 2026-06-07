@@ -6,16 +6,16 @@
         <button type="button" class="close-btn" @click="backToDeal">Close</button>
       </header>
 
-      <p class="success-badge">Reservation secured</p>
-      <h1>Booking confirmed</h1>
-      <p class="lead">Your reservation is secured and confirmation details are on the way.</p>
+      <p class="success-badge">Pass secured</p>
+      <h1>Pass ready</h1>
+      <p class="lead">Your pass is ready and confirmation details are on the way.</p>
 
       <section class="detail-card">
-        <p><span>Booking number</span><strong>{{ bookingNumber || "Generating..." }}</strong></p>
-        <p><span>Event</span><strong>{{ deal?.title || "Event details loading" }}</strong></p>
+        <p><span>Pass number</span><strong>{{ bookingNumber || "Generating..." }}</strong></p>
+        <p><span>Deal</span><strong>{{ deal?.title || "Deal details loading" }}</strong></p>
         <p><span>Date</span><strong>{{ deal ? formatDate(deal.start_time) : "Date pending confirmation" }}</strong></p>
-        <p><span>Attendee</span><strong>{{ attendeeName || "Guest attendee" }}</strong></p>
-        <p><span>Confirmation email</span><strong>{{ attendeeEmail || "Email will be delivered shortly" }}</strong></p>
+        <p><span>Customer</span><strong>{{ attendeeName || "Guest attendee" }}</strong></p>
+        <p><span>Email</span><strong>{{ attendeeEmail || "Email will be delivered shortly" }}</strong></p>
       </section>
 
       <p class="pass-state" :class="{ ready: isPassReady }">
@@ -26,8 +26,8 @@
         <p class="next-title">What happens next</p>
         <ul>
           <li>Confirmation email sent</li>
-          <li>QR pass ready for entry</li>
-          <li>Show this QR at check-in</li>
+          <li>QR pass ready for check-in</li>
+          <li>Show this QR at redemption</li>
           <li>Reminder notifications enabled</li>
         </ul>
       </section>

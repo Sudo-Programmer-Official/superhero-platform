@@ -40,18 +40,18 @@
             <div>
               <p class="badge">{{ getStatusLabel(deal.status) }}</p>
               <h1>{{ deal.title }}</h1>
-              <p class="sub">{{ deal.description || "A premium wellness experience." }}</p>
+              <p class="sub">{{ deal.description || "Claim this offer and save your pass." }}</p>
             </div>
             <div class="price-block">
               <p class="price">{{ formatMoney(deal.base_price, deal.currency) }}</p>
-              <p class="price-caption">per attendee</p>
+              <p class="price-caption">offer</p>
             </div>
           </div>
 
           <div class="meta-grid">
             <p><strong>Date</strong> {{ formatDate(deal.start_time) }}</p>
-            <p><strong>Ends</strong> {{ formatDate(deal.end_time) }}</p>
-            <p><strong>Location</strong> {{ deal.location || "Location shared after booking" }}</p>
+            <p><strong>Expires</strong> {{ formatDate(deal.end_time) }}</p>
+            <p><strong>Location</strong> {{ deal.location || "Location shared after claim" }}</p>
             <p><strong>Availability</strong> {{ deal.remaining_slots }} / {{ deal.capacity }} left</p>
           </div>
         </div>
@@ -61,42 +61,16 @@
         <div class="content-stack">
           <AppCard>
             <div class="card-inner">
-              <h2>About this experience</h2>
-              <p class="copy">{{ deal.description || "This guided session is designed to help clients reset and restore." }}</p>
-
-              <div class="trust-row">
-                <span>Secure booking</span>
-                <span>Instant confirmation</span>
-                <span>QR access included</span>
-                <span>Refund protected</span>
-              </div>
-            </div>
-          </AppCard>
-
-          <AppCard>
-            <div class="card-inner">
-              <h3>Hosted by</h3>
-              <div class="host-card">
-                <div class="host-avatar">OM</div>
-                <div class="host-main">
-                  <p class="host-name">OpenMat Practitioner</p>
-                  <p class="host-meta">Wellness · Verified host</p>
-                </div>
-                <div class="host-stats">143+ hosted</div>
-              </div>
-              <div class="proof-row">
-                <span>4.9 host rating</span>
-                <span>12 people viewed today</span>
-                <span>Repeat attendees welcome</span>
-              </div>
+              <h2>About this deal</h2>
+              <p class="copy">{{ deal.description || "Tap Claim Pass to save it, then show the QR at redemption." }}</p>
             </div>
           </AppCard>
         </div>
 
         <AppCard class="checkout-card desktop-checkout">
           <div class="card-inner card-inner--checkout">
-            <h2>Reserve your spot</h2>
-            <p class="copy">Complete details to secure your booking.</p>
+            <h2>Claim Pass</h2>
+            <p class="copy">Enter your details once to save the pass.</p>
             <CheckoutPanelContent />
           </div>
         </AppCard>
@@ -113,7 +87,7 @@
           :disabled="deal.status !== 'published' || isCheckoutBusy"
           @click="mobileSheetOpen = true"
         >
-          {{ isCheckoutBusy ? "Reserving your spot..." : "Reserve Spot" }}
+          {{ isCheckoutBusy ? "Saving pass..." : "Claim Pass" }}
         </button>
       </div>
 
@@ -121,7 +95,7 @@
         <section class="mobile-sheet" role="dialog" aria-modal="true" aria-label="Checkout">
           <div class="sheet-handle"></div>
           <div class="sheet-head">
-            <h2>Checkout</h2>
+            <h2>Claim pass</h2>
             <button class="sheet-close" type="button" :disabled="isCheckoutBusy" @click="mobileSheetOpen = false">Close</button>
           </div>
           <div class="sheet-content">
@@ -196,15 +170,15 @@ const checkoutStateLabel = computed(() => {
 });
 const checkoutStatusCopy = computed(() => {
   if (checkoutState.value === "processing") return "Creating secure payment session...";
-  if (checkoutState.value === "success") return "Reservation accepted. Redirecting to payment.";
+  if (checkoutState.value === "success") return "Pass claim accepted. Redirecting to payment.";
   if (checkoutState.value === "failed") return "Please review details and retry.";
-  return "Secure checkout powered by Stripe.";
+  return "Secure claim flow powered by Stripe.";
 });
 
 const checkoutLabel = computed(() => {
-  if (checkoutState.value === "processing") return "Reserving your spot...";
+  if (checkoutState.value === "processing") return "Saving pass...";
   if (deal.value?.status !== "published") return "Unavailable";
-  return `Reserve for ${total.value}`;
+  return `Claim for ${total.value}`;
 });
 
 function formatDate(value: string): string {
@@ -223,7 +197,7 @@ function startReservationTimer() {
       return;
     }
     if (reserveSeconds.value <= 0) {
-      checkoutNotice.value = "Reservation expired. We refreshed your hold.";
+      checkoutNotice.value = "Pass hold expired. We refreshed your hold.";
       checkoutNoticeTone.value = "error";
       resetReservationTimer();
       quantity.value = 1;
@@ -262,7 +236,7 @@ async function load() {
     quantity.value = 1;
     const checkoutQuery = String(route.query.checkout || "");
     if (checkoutQuery === "cancel") {
-      checkoutNotice.value = "Checkout was cancelled. You can retry any time.";
+      checkoutNotice.value = "Claim flow was cancelled. You can retry any time.";
       checkoutNoticeTone.value = "error";
       checkoutState.value = "idle";
     } else if (checkoutQuery === "failed") {
@@ -291,7 +265,7 @@ async function onCheckout() {
     return;
   }
   if (reserveSeconds.value <= 0) {
-    formError.value = "Reservation expired. Please retry checkout.";
+    formError.value = "Pass hold expired. Please retry claim flow.";
     checkoutState.value = "failed";
     resetReservationTimer();
     return;
@@ -324,7 +298,7 @@ async function onCheckout() {
   } catch (err) {
     checkoutState.value = "failed";
     showToast(`Checkout failed: ${String(err)}`, "error");
-    checkoutNotice.value = "Checkout request failed. Please try again.";
+    checkoutNotice.value = "Claim request failed. Please try again.";
     checkoutNoticeTone.value = "error";
   }
 }
@@ -336,13 +310,13 @@ const CheckoutPanelContent = defineComponent({
       h("div", { class: ["checkout-shell", isMobileViewport.value ? "is-mobile" : ""] }, [
         h("div", { class: "checkout-price" }, [
           h("p", { class: "checkout-price-value" }, formatMoney(deal.value?.base_price, deal.value?.currency)),
-          h("p", { class: "checkout-price-sub" }, "per attendee")
+          h("p", { class: "checkout-price-sub" }, "to claim")
         ]),
         h("div", { class: "scarcity-row" }, [
-          h("span", { class: ["scarcity-pill", lowStock.value ? "is-hot" : ""] }, lowStock.value ? `Only ${deal.value?.remaining_slots} spots left` : "Spots available"),
-          h("span", { class: "scarcity-pill" }, "High demand this week")
+          h("span", { class: ["scarcity-pill", lowStock.value ? "is-hot" : ""] }, lowStock.value ? `Only ${deal.value?.remaining_slots} left` : "Pass available"),
+          h("span", { class: "scarcity-pill" }, "Claim now")
         ]),
-        h("div", { class: ["reserve-pill", reserveSeconds.value <= 120 ? "is-warning" : ""] }, `Reservation held for ${reserveTimeLabel.value}`),
+        h("div", { class: ["reserve-pill", reserveSeconds.value <= 120 ? "is-warning" : ""] }, `Pass held for ${reserveTimeLabel.value}`),
         h("div", { class: "qty-row" }, [
           h("button", { class: "qty-btn", type: "button", disabled: quantity.value <= 1, onClick: () => (quantity.value -= 1) }, "−"),
           h("span", { class: "qty-value" }, String(quantity.value)),
