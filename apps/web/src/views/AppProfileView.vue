@@ -8,14 +8,9 @@
       <h1>{{ name || "Your business" }}</h1>
       <p class="sub">{{ bio || "Add a short description for your public profile." }}</p>
       <div class="actions">
+        <button class="btn" type="button" @click="editProfile">Edit Profile</button>
         <button class="btn primary" type="button" @click="shareProfile">Share Profile</button>
       </div>
-    </article>
-
-    <article class="card">
-      <p class="eyebrow">Advanced tools</p>
-      <p class="sub">Legacy settings, bookings, wallet passes, and admin tools stay here.</p>
-      <button class="btn" type="button" @click="openAdvanced">Open Advanced Tools</button>
     </article>
   </section>
 </template>
@@ -61,8 +56,8 @@ async function shareProfile() {
   }
 }
 
-function openAdvanced() {
-  void router.push({ name: "dashboard" });
+function editProfile() {
+  void router.push({ name: "profile" });
 }
 
 onMounted(() => {

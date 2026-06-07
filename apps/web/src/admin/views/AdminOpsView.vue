@@ -49,6 +49,7 @@
           <template #cell-health="{ row }"><AppStatusPill :status="String(row.health)" /></template>
           <template #cell-actions="{ row }">
             <div class="actions">
+              <button @click="openPractitionerDetails(row)">View</button>
               <button @click="practitionerOps.performAction('impersonate', String(row.id))">Impersonate</button>
               <button class="danger" @click="confirmAction(`Suspend ${row.name}?`, 'This can impact payouts and visibility.', () => practitionerOps.performAction('suspend', String(row.id)))">Suspend</button>
             </div>
@@ -239,6 +240,55 @@
         </ul>
       </div>
     </AppModal>
+
+    <AppModal :open="practitionerDrawerOpen" @close="closePractitionerDetails">
+      <div class="practitioner-modal">
+        <div class="timeline-head">
+          <div>
+            <p class="modal-eyebrow">Practitioner</p>
+            <h4>{{ practitionerDetails?.name || "Practitioner details" }}</h4>
+          </div>
+          <button class="timeline-refresh" @click="closePractitionerDetails">Close</button>
+        </div>
+
+        <p class="timeline-sub">@{{ practitionerDetails?.slug }}</p>
+
+        <div v-if="practitionerDetails" class="practitioner-chip-grid">
+          <AppStatusPill :status="practitionerDetails.subscription_status" />
+          <AppStatusPill :status="practitionerDetails.payout_status" />
+          <AppStatusPill :status="practitionerDetails.stripe_state" />
+          <AppStatusPill :status="practitionerDetails.verification_state" />
+          <AppStatusPill :status="practitionerDetails.health" />
+          <AppStatusPill :status="practitionerDetails.is_public ? 'active' : 'suspended'" />
+        </div>
+
+        <dl v-if="practitionerDetails" class="practitioner-meta">
+          <div>
+            <dt>Created</dt>
+            <dd>{{ formatTimelineTime(practitionerDetails.created_at) }}</dd>
+          </div>
+          <div>
+            <dt>Visibility</dt>
+            <dd>{{ practitionerDetails.is_public ? "Public" : "Suspended" }}</dd>
+          </div>
+          <div>
+            <dt>Access</dt>
+            <dd>Admin control surface</dd>
+          </div>
+        </dl>
+
+        <div v-if="practitionerDetails" class="practitioner-actions">
+          <AppButton size="sm" variant="ghost" @click="practitionerOps.performAction('impersonate', practitionerDetails.id)">Impersonate</AppButton>
+          <AppButton
+            size="sm"
+            variant="secondary"
+            @click="confirmAction(`Suspend ${practitionerDetails.name}?`, 'This can impact payouts and visibility.', () => practitionerOps.performAction('suspend', practitionerDetails.id))"
+          >
+            Suspend
+          </AppButton>
+        </div>
+      </div>
+    </AppModal>
   </DashboardPageShell>
 </template>
 
@@ -282,6 +332,19 @@ const timelineEvents = ref<AdminTimelineEventRow[]>([]);
 const timelineEntityType = ref("");
 const timelineEntityId = ref("");
 const timelineTitle = ref("Timeline");
+const practitionerDrawerOpen = ref(false);
+const practitionerDetails = ref<null | {
+  id: string;
+  name: string;
+  slug: string;
+  is_public: boolean;
+  created_at: string;
+  subscription_status: string;
+  payout_status: string;
+  stripe_state: string;
+  verification_state: string;
+  health: string;
+}>(null);
 
 const mode = computed(() => String(route.meta.adminMode || "generic"));
 const query = computed({
@@ -491,6 +554,27 @@ async function openPractitionerContext(practitionerName: string) {
   await navigateAdmin("admin-practitioners", practitionerName);
 }
 
+function openPractitionerDetails(row: {
+  id: string;
+  name: string;
+  slug: string;
+  is_public: boolean;
+  created_at: string;
+  subscription_status: string;
+  payout_status: string;
+  stripe_state: string;
+  verification_state: string;
+  health: string;
+}) {
+  practitionerDetails.value = row;
+  practitionerDrawerOpen.value = true;
+}
+
+function closePractitionerDetails() {
+  practitionerDrawerOpen.value = false;
+  practitionerDetails.value = null;
+}
+
 async function openTimeline(entityType: string, entityId: string, title: string) {
   timelineEntityType.value = entityType;
   timelineEntityId.value = entityId;
@@ -572,6 +656,14 @@ function timelineMetadataPairs(event: AdminTimelineEventRow): Array<{ key: strin
 .timeline-time, .timeline-entity { margin: 0; font-size: 12px; color: rgba(255,255,255,.68); }
 .timeline-meta { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
 .meta-chip { border: 1px solid rgba(255,255,255,.16); border-radius: 999px; padding: 3px 8px; font-size: 11px; color: rgba(255,255,255,.82); background: rgba(255,255,255,.05); }
+.practitioner-modal { display: grid; gap: 16px; }
+.modal-eyebrow { margin: 0 0 4px; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: rgba(244,216,167,.92); }
+.practitioner-chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.practitioner-meta { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0,1fr)); margin: 0; }
+.practitioner-meta div { border-radius: 14px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); padding: 12px; }
+.practitioner-meta dt { margin: 0 0 4px; color: rgba(255,255,255,.56); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.practitioner-meta dd { margin: 0; color: rgba(255,255,255,.9); font-size: 14px; }
+.practitioner-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .placeholder-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
 .placeholder-card { border-radius: 14px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); padding: 14px; display: grid; gap: 8px; }
 .placeholder-card h4 { margin: 0; font-size: 18px; }
@@ -581,5 +673,6 @@ function timelineMetadataPairs(event: AdminTimelineEventRow): Array<{ key: strin
 }
 @media (max-width: 1023px) {
   .placeholder-grid { grid-template-columns: 1fr; }
+  .practitioner-meta { grid-template-columns: 1fr; }
 }
 </style>

@@ -7,6 +7,8 @@ export type PractitionerOpsRecord = {
   id: string;
   name: string;
   slug: string;
+  is_public: boolean;
+  created_at: string;
   subscription_status: "trial" | "active" | "grace" | "churn_risk";
   payout_status: "connected" | "restricted" | "pending";
   stripe_state: "connected" | "onboarding" | "missing";
@@ -19,6 +21,8 @@ function mapRow(row: AdminPractitionerRow): PractitionerOpsRecord {
     id: row.id,
     name: row.name,
     slug: row.slug,
+    is_public: row.is_public,
+    created_at: row.created_at,
     subscription_status: (["trial", "active", "grace", "churn_risk"].includes(row.subscription_status) ? row.subscription_status : "active") as PractitionerOpsRecord["subscription_status"],
     payout_status: (["connected", "restricted", "pending"].includes(row.payout_status) ? row.payout_status : "pending") as PractitionerOpsRecord["payout_status"],
     stripe_state: (["connected", "onboarding", "missing"].includes(row.stripe_state) ? row.stripe_state : "missing") as PractitionerOpsRecord["stripe_state"],
