@@ -97,9 +97,25 @@ const IconPlus = () => h(IconBase, { path: "M12 5v14 M5 12h14" });
 .dock-item .icon { width: 20px; height: 20px; display: grid; }
 .dock-item .icon :deep(svg) { width: 20px; height: 20px; }
 .dock-item span { font-size: 10px; font-weight: 600; opacity: 0; transform: translateY(2px); max-height: 0; overflow: hidden; transition: opacity .16s ease, transform .16s ease, max-height .16s ease; }
-.dock-item--create { color: #0c1728; border-color: rgba(240,190,100,.45); background: linear-gradient(145deg, #f3d89f, #e9c57b); box-shadow: 0 10px 24px rgba(0,0,0,.22); }
-.dock-item--create .icon { color: #0c1728; }
-.dock-item--create span { color: #0c1728; opacity: 1; transform: translateY(0); max-height: 18px; }
+.dock-item--create {
+  color: #0c1728;
+  border-color: rgba(240,190,100,.45);
+  background: linear-gradient(145deg, #f3d89f, #e9c57b);
+  box-shadow: 0 10px 24px rgba(0,0,0,.22);
+  align-content: center;
+  gap: 2px;
+}
+.dock-item--create .icon {
+  color: #0c1728;
+  margin-top: 0;
+}
+.dock-item--create span {
+  color: #0c1728;
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 18px;
+  line-height: 1;
+}
 .dock-item.active { color: #f4d8a7; border-color: rgba(240,190,100,.38); background: rgba(240,190,100,.12); box-shadow: inset 0 0 0 1px rgba(240,190,100,.14); }
 .dock-item.active span { opacity: 1; transform: translateY(0); max-height: 18px; }
 .dock-item:not(.active) { color: rgba(233, 241, 252, 0.56); }
