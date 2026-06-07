@@ -22,10 +22,6 @@
         <i class="icon" aria-hidden="true"><IconTicket /></i>
         <span>Deals</span>
       </RouterLink>
-      <RouterLink class="dock-item dock-item--create" :class="{ active: isActive('app-deals-create') }" to="/app/deals/create">
-        <i class="icon" aria-hidden="true"><IconPlus /></i>
-        <span>Create</span>
-      </RouterLink>
       <RouterLink class="dock-item" :class="{ active: isActive('app-redemptions') }" to="/app/redemptions">
         <i class="icon" aria-hidden="true"><IconScan /></i>
         <span>Redemptions</span>
@@ -39,6 +35,9 @@
         <span>Profile</span>
       </RouterLink>
     </nav>
+    <RouterLink class="fab-create" to="/app/deals/create" aria-label="Create deal">
+      <i class="icon" aria-hidden="true"><IconPlus /></i>
+    </RouterLink>
 
     <div class="overlay" :class="{ open: drawerOpen }" @click="drawerOpen = false"></div>
     <aside class="drawer" :class="{ open: drawerOpen }" aria-label="Workspace tools">
@@ -87,39 +86,48 @@ const IconPlus = () => h(IconBase, { path: "M12 5v14 M5 12h14" });
 </script>
 
 <style scoped>
-.app-shell { min-height: 100dvh; background: radial-gradient(900px 420px at 15% -10%, rgba(38, 91, 169, 0.18), transparent 60%), linear-gradient(180deg, #081a32, #030b18); color: #e8eef8; padding-bottom: calc(116px + env(safe-area-inset-bottom, 0px)); }
+.app-shell { min-height: 100dvh; background: radial-gradient(900px 420px at 15% -10%, rgba(38, 91, 169, 0.18), transparent 60%), linear-gradient(180deg, #081a32, #030b18); color: #e8eef8; padding-bottom: calc(122px + env(safe-area-inset-bottom, 0px)); }
 .app-head { position: sticky; top: 0; z-index: 20; min-height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.1); background: rgba(5, 12, 24, .76); backdrop-filter: blur(12px); }
 .brand { margin: 0; font-weight: 700; letter-spacing: -.02em; font-size: 20px; }
 .advanced-btn { min-height: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05); color: #dbe5f3; padding: 0 12px; }
 .app-main { padding: 12px; max-width: 760px; margin: 0 auto; }
-.dock { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 25; border-radius: 18px; border: 1px solid rgba(255,255,255,.14); background: rgba(7,14,24,.92); backdrop-filter: blur(12px); padding: 8px; display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 6px; }
+.dock { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 25; border-radius: 18px; border: 1px solid rgba(255,255,255,.14); background: rgba(7,14,24,.92); backdrop-filter: blur(12px); padding: 8px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
 .dock-item { min-height: 54px; border-radius: 12px; text-decoration: none; color: rgba(233, 241, 252, 0.68); display: grid; justify-items: center; align-content: center; gap: 3px; border: 1px solid transparent; transition: all .18s ease; }
 .dock-item .icon { width: 20px; height: 20px; display: grid; }
 .dock-item .icon :deep(svg) { width: 20px; height: 20px; }
 .dock-item span { font-size: 10px; font-weight: 600; opacity: 0; transform: translateY(2px); max-height: 0; overflow: hidden; transition: opacity .16s ease, transform .16s ease, max-height .16s ease; }
-.dock-item--create {
-  color: #0c1728;
-  border-color: rgba(240,190,100,.45);
-  background: linear-gradient(145deg, #f3d89f, #e9c57b);
-  box-shadow: 0 10px 24px rgba(0,0,0,.22);
-  align-content: center;
-  gap: 2px;
-}
-.dock-item--create .icon {
-  color: #0c1728;
-  margin-top: 0;
-}
-.dock-item--create span {
-  color: #0c1728;
-  opacity: 1;
-  transform: translateY(0);
-  max-height: 18px;
-  line-height: 1;
-}
 .dock-item.active { color: #f4d8a7; border-color: rgba(240,190,100,.38); background: rgba(240,190,100,.12); box-shadow: inset 0 0 0 1px rgba(240,190,100,.14); }
 .dock-item.active span { opacity: 1; transform: translateY(0); max-height: 18px; }
 .dock-item:not(.active) { color: rgba(233, 241, 252, 0.56); }
 .dock-item:hover { color: rgba(244, 216, 167, 0.9); }
+.fab-create {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  z-index: 27;
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #0c1728;
+  border: 1px solid rgba(240,190,100,.45);
+  background: linear-gradient(145deg, #f3d89f, #e9c57b);
+  box-shadow: 0 14px 28px rgba(0,0,0,.42), 0 0 0 1px rgba(240,190,100,.18);
+  text-decoration: none;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.fab-create .icon { width: 20px; height: 20px; display: grid; }
+.fab-create .icon :deep(svg) { width: 20px; height: 20px; }
+.fab-create:hover {
+  transform: translateX(-50%) translateY(-1px);
+  filter: brightness(1.02);
+}
+.fab-create:active {
+  transform: translateX(-50%) translateY(1px) scale(0.98);
+  box-shadow: 0 8px 20px rgba(0,0,0,.36), 0 0 0 1px rgba(240,190,100,.14);
+}
 .overlay { position: fixed; inset: 0; z-index: 29; background: rgba(4,10,20,.56); opacity: 0; pointer-events: none; transition: opacity .16s ease; }
 .overlay.open { opacity: 1; pointer-events: auto; }
 .drawer { position: fixed; right: 0; top: 0; bottom: 0; width: min(90vw, 340px); z-index: 30; transform: translateX(100%); transition: transform .18s ease; border-left: 1px solid rgba(255,255,255,.14); background: rgba(8,16,30,.96); backdrop-filter: blur(12px); padding: 14px; display: grid; grid-template-rows: auto 1fr; gap: 10px; }
