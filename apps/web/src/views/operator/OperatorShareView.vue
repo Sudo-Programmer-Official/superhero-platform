@@ -13,8 +13,10 @@
     <p v-else-if="errorText" class="hint is-error">{{ errorText }}</p>
 
     <article v-for="deal in feedDeals" :key="deal.id" class="card deal-card" :class="{ topdeal: deal.id === feedDeals[0]?.id }">
-      <img v-if="deal.cover" :src="deal.cover" alt="Deal cover" class="cover" />
-      <div v-else class="cover cover--fallback"></div>
+      <div class="cover-wrap">
+        <img v-if="deal.cover" :src="deal.cover" alt="Deal cover" class="cover" />
+        <div v-else class="cover cover--fallback"></div>
+      </div>
 
       <div class="body">
         <p class="title">{{ deal.title }}</p>
@@ -33,6 +35,7 @@
           <summary aria-label="More actions">•••</summary>
           <div class="overflow-menu">
             <button class="menu-btn" type="button" @click="copyOfferLink(deal.slug)">Copy link</button>
+            <button class="menu-btn menu-btn--danger" type="button" @click="archiveOffer(deal.id)">Archive</button>
           </div>
         </details>
       </div>
@@ -50,7 +53,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { listDeals, listWalletPasses, type DealCardPayload, type WalletPassPayload } from "../../services/api";
+import { archiveDeal, listDeals, listWalletPasses, type DealCardPayload, type WalletPassPayload } from "../../services/api";
 import { sessionState } from "../../stores/session";
 import { showToast } from "../../stores/toast";
 
@@ -133,6 +136,17 @@ async function copyOfferLink(slug: string) {
   showToast("Offer link copied.", "success");
 }
 
+async function archiveOffer(dealId: string) {
+  if (!sessionState.token) return;
+  try {
+    await archiveDeal(sessionState.token, dealId);
+    showToast("Offer archived.", "success");
+    await load();
+  } catch (err) {
+    showToast(`Failed to archive offer: ${String(err)}`, "error");
+  }
+}
+
 async function shareOffer(slug: string) {
   const url = offerPath(slug);
   if (navigator.share) {
@@ -172,7 +186,8 @@ function handleRefreshVisibility() {
 .eyebrow { margin: 0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #f4d8a7; }
 h1 { margin: 0; font-size: 28px; line-height: 1.06; letter-spacing: -0.02em; }
 .sub { margin: 0; color: rgba(230,238,249,.78); }
-.deal-card { padding: 0; overflow: hidden; }
+.deal-card { padding: 0; overflow: visible; position: relative; }
+.cover-wrap { border-radius: 18px 18px 0 0; overflow: hidden; }
 .cover { width: 100%; aspect-ratio: 1.15 / 1; object-fit: cover; display: block; }
 .cover--fallback { background: radial-gradient(circle at 30% 20%, rgba(240,190,100,.16), transparent 36%), linear-gradient(135deg, rgba(26,42,69,.8), rgba(8,13,24,.95)); }
 .body { padding: 12px 14px 0 14px; display: grid; gap: 4px; }
@@ -180,7 +195,7 @@ h1 { margin: 0; font-size: 28px; line-height: 1.06; letter-spacing: -0.02em; }
 .meta { margin: 0; font-size: 13px; color: rgba(230,238,249,.72); }
 .metrics { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
 .metrics span { border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: rgba(233,241,252,.82); padding: 6px 10px; font-size: 12px; }
-.actions { padding: 12px 14px 14px 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+.actions { padding: 12px 14px 14px 14px; display: flex; gap: 8px; flex-wrap: wrap; position: relative; z-index: 4; }
 .overflow { position: relative; }
 .overflow summary {
   list-style: none;
@@ -204,7 +219,7 @@ h1 { margin: 0; font-size: 28px; line-height: 1.06; letter-spacing: -0.02em; }
   border: 1px solid rgba(255,255,255,.14);
   background: rgba(8,14,24,.96);
   padding: 6px;
-  z-index: 3;
+  z-index: 20;
 }
 .menu-btn {
   width: 100%;
@@ -216,6 +231,7 @@ h1 { margin: 0; font-size: 28px; line-height: 1.06; letter-spacing: -0.02em; }
   text-align: left;
   padding: 0 10px;
 }
+.menu-btn--danger { color: #ffb2b2; }
 .btn { min-height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #e8eef8; padding: 0 12px; }
 .btn.primary { border-color: rgba(240,190,100,.46); color: #0c1728; background: linear-gradient(145deg, #f3d89f, #e9c57b); font-weight: 700; width: fit-content; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }

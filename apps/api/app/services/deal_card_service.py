@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.types import AuthPrincipal
+from app.auth.types import AccessContext, AuthPrincipal
 from app.models import DealCard
 from app.repositories.deal_card_repository import DealCardRepository
 from app.repositories.practitioner_repository import PractitionerRepository
@@ -21,7 +21,11 @@ class DealCardService:
         self.practitioner_repo = PractitionerRepository(session)
         self.wallet_repo = WalletPassRepository(session)
 
-    async def list_deals(self) -> list[DealCard]:
+    async def list_deals(self, access: AccessContext) -> list[DealCard]:
+        if access.role == "practitioner":
+            if not access.practitioner_id:
+                return []
+            return await self.repo.list_by_practitioner(access.practitioner_id)
         return await self.repo.list_all()
 
     async def list_public_deals_for_practitioner(self, practitioner_slug: str) -> list[DealCard]:

@@ -14,10 +14,10 @@ router = APIRouter(prefix="/deal-cards", tags=["deal-cards"])
 
 @router.get("", response_model=list[DealCardRead])
 async def list_deal_cards(
-    _: AccessContext = Depends(require_tenant_access("super_admin", "admin", "practitioner")),
+    access: AccessContext = Depends(require_tenant_access("super_admin", "admin", "practitioner")),
     session: AsyncSession = Depends(get_db_session),
 ):
-    return await DealCardService(session).list_deals()
+    return await DealCardService(session).list_deals(access)
 
 
 @router.get("/public/{practitioner_slug}", response_model=list[DealCardRead])

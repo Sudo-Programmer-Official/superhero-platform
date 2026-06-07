@@ -44,7 +44,13 @@ export function usePractitionerOps() {
     loading.value = true;
     error.value = "";
     try {
-      rows.value = (await listAdminPractitioners(sessionState.token, query.value)).map(mapRow);
+      const payload = await listAdminPractitioners(sessionState.token, query.value);
+      console.debug("admin.practitioners.response", {
+        isArray: Array.isArray(payload),
+        type: Array.isArray(payload) ? "array" : typeof payload,
+        length: Array.isArray(payload) ? payload.length : null
+      });
+      rows.value = Array.isArray(payload) ? payload.map(mapRow) : [];
     } catch (err) {
       error.value = `Failed practitioner ops: ${String(err)}`;
       showToast(error.value, "error");

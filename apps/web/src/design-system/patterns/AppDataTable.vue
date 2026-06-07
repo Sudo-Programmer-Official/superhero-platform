@@ -82,11 +82,12 @@ const emit = defineEmits<{
 const page = ref(1);
 const selectedSet = ref(new Set<string>());
 
-const totalPages = computed(() => Math.max(1, Math.ceil(props.rows.length / props.pageSize)));
+const safeRows = computed(() => (Array.isArray(props.rows) ? props.rows : []));
+const totalPages = computed(() => Math.max(1, Math.ceil(safeRows.value.length / props.pageSize)));
 const visibleRows = computed(() => {
-  if (!props.pagination) return props.rows;
+  if (!props.pagination) return safeRows.value;
   const start = (page.value - 1) * props.pageSize;
-  return props.rows.slice(start, start + props.pageSize);
+  return safeRows.value.slice(start, start + props.pageSize);
 });
 const visibleKeys = computed(() => visibleRows.value.map((row, index) => props.rowKey(row, index)));
 const selectedKeys = computed(() => [...selectedSet.value]);
@@ -96,10 +97,10 @@ const allVisibleSelected = computed(
 const isIndeterminate = computed(
   () => visibleKeys.value.some((key) => selectedSet.value.has(key)) && !allVisibleSelected.value
 );
-const showToolbar = computed(() => props.selectable || props.rows.length > 0);
+const showToolbar = computed(() => props.selectable || safeRows.value.length > 0);
 
 watch(
-  () => props.rows,
+  safeRows,
   () => {
     if (page.value > totalPages.value) page.value = totalPages.value;
     selectedSet.value = new Set<string>();
