@@ -56,6 +56,22 @@
     </article>
 
     <article class="card">
+      <p class="eyebrow">Install OpenMat</p>
+      <p v-if="isInstalled" class="sub">OpenMat is installed on this device.</p>
+      <template v-else-if="isInstallable">
+        <p class="sub">Get faster access and a native app experience.</p>
+        <div class="actions actions-left">
+          <button class="btn primary" type="button" @click="install">Install App</button>
+          <button class="btn" type="button" @click="dismissInstallPrompt">Dismiss</button>
+        </div>
+      </template>
+      <template v-else-if="showIOSInstructions">
+        <p class="sub">On iPhone Safari: tap Share, then Add to Home Screen.</p>
+        <button class="btn" type="button" @click="dismissInstallPrompt">Dismiss</button>
+      </template>
+    </article>
+
+    <article class="card">
       <p class="eyebrow">Advanced</p>
       <button class="btn" type="button" @click="openAdvanced">Advanced Workspace</button>
     </article>
@@ -77,6 +93,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { usePWAInstall } from "../composables/usePWAInstall";
 import { formatLocalDateTime } from "../domain/deal";
 import { activityLabel, activityTime, type ActivityEvent } from "../domain/activity";
 import { fetchPublicPractitioner, listActivityEvents, listDeals, updatePractitioner, uploadPractitionerImage, type DealCardPayload } from "../services/api";
@@ -95,6 +112,7 @@ const avatarUploadState = ref<"idle" | "uploaded">("idle");
 const deals = ref<DealCardPayload[]>([]);
 const activityLoading = ref(false);
 const activityEvents = ref<ActivityEvent[]>([]);
+const { install, dismissInstallPrompt, isInstallable, isInstalled, showIOSInstructions } = usePWAInstall();
 
 const primaryOffer = computed(() => deals.value.find((d) => d.status === "published") || null);
 const recentActivity = computed(() =>
@@ -234,6 +252,7 @@ onMounted(() => {
 h1 { margin: 0; font-size: 28px; line-height: 1.05; }
 .sub { margin: 0; color: rgba(230,238,249,.75); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.actions.actions-left { justify-content: flex-start; }
 .edit-grid { width: 100%; display: grid; gap: 10px; }
 input, textarea { width: 100%; min-height: 44px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(7,14,24,.72); color: #e8eef8; padding: 10px 12px; box-sizing: border-box; }
 textarea { min-height: 88px; resize: vertical; }
