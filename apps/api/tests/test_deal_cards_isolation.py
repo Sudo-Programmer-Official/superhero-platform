@@ -62,6 +62,30 @@ def test_deal_cards_service_scopes_practitioner_list(monkeypatch) -> None:
     assert called == {"by_practitioner": True, "all": False}
 
 
+def test_deal_cards_service_scopes_by_practitioner_id_even_for_admin_role(monkeypatch) -> None:
+    practitioner_id = uuid4()
+    called = {"by_practitioner": False, "all": False}
+
+    async def fake_list_by_practitioner(value):
+        called["by_practitioner"] = True
+        assert value == practitioner_id
+        return ["alpha"]
+
+    async def fake_list_all():
+      called["all"] = True
+      raise AssertionError("list_all should not be used when practitioner_id exists")
+
+    service = DealCardService(session=object())
+    monkeypatch.setattr(service.repo, "list_by_practitioner", fake_list_by_practitioner)
+    monkeypatch.setattr(service.repo, "list_all", fake_list_all)
+
+    access = _override_access_context(practitioner_id=practitioner_id, role="admin")
+    result = asyncio.run(service.list_deals(access))
+
+    assert result == ["alpha"]
+    assert called == {"by_practitioner": True, "all": False}
+
+
 def test_public_deal_list_scopes_to_practitioner_slug(monkeypatch) -> None:
     practitioner_id = uuid4()
     public_practitioner = SimpleNamespace(id=practitioner_id, is_public=True)

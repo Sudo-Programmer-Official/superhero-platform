@@ -22,10 +22,10 @@ class DealCardService:
         self.wallet_repo = WalletPassRepository(session)
 
     async def list_deals(self, access: AccessContext) -> list[DealCard]:
-        if access.role == "practitioner":
-            if not access.practitioner_id:
-                return []
+        if access.practitioner_id:
             return await self.repo.list_by_practitioner(access.practitioner_id)
+        if access.role == "practitioner":
+            return []
         return await self.repo.list_all()
 
     async def list_public_deals_for_practitioner(self, practitioner_slug: str) -> list[DealCard]:
