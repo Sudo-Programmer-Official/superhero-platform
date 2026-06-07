@@ -4,7 +4,6 @@
       <p class="eyebrow">Deals</p>
       <h1>Chronological feed</h1>
       <p class="sub">This is the place to post offers and share them fast.</p>
-      <button class="btn primary" type="button" @click="createOffer">Create Deal</button>
     </article>
 
     <div v-if="loading" class="skeleton-list">
@@ -41,18 +40,33 @@
       </div>
     </article>
 
-    <article v-if="feedDeals.length === 0 && !loading && !errorText" class="card empty-card">
-      <p class="eyebrow">Start here</p>
-      <h2>Post your first offer</h2>
-      <p class="sub">Upload a flyer, add the title, and publish to the feed.</p>
-      <button class="btn primary" type="button" @click="createOffer">Create Deal</button>
+    <article v-if="feedDeals.length === 0 && !loading && !errorText" class="card deal-card empty-deal">
+      <div class="cover-wrap">
+        <div class="cover cover--placeholder">
+          <span>Flyer preview</span>
+        </div>
+      </div>
+
+      <div class="body">
+        <p class="eyebrow">Example deal</p>
+        <p class="title">Summer of 26 Promotion</p>
+        <p class="meta">10% Off Popular Services</p>
+        <div class="metrics">
+          <span>Availability 20 spots</span>
+          <span>Expires Jul 7</span>
+        </div>
+      </div>
+
+      <div class="empty-copy">
+        <p class="sub">Upload a flyer and publish your first promotion.</p>
+        <p class="hint">Tap + to create your first deal.</p>
+      </div>
     </article>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
 import { archiveDeal, listDeals, listWalletPasses, type DealCardPayload, type WalletPassPayload } from "../../services/api";
 import { sessionState } from "../../stores/session";
 import { showToast } from "../../stores/toast";
@@ -69,7 +83,6 @@ type FeedDeal = {
   redeemed: number;
 };
 
-const router = useRouter();
 const loading = ref(false);
 const errorText = ref("");
 const deals = ref<DealCardPayload[]>([]);
@@ -125,10 +138,6 @@ async function load() {
   } finally {
     loading.value = false;
   }
-}
-
-function createOffer() {
-  void router.push({ name: "app-deals-create" });
 }
 
 async function copyOfferLink(slug: string) {
@@ -190,11 +199,24 @@ h1 { margin: 0; font-size: 28px; line-height: 1.06; letter-spacing: -0.02em; }
 .cover-wrap { border-radius: 18px 18px 0 0; overflow: hidden; }
 .cover { width: 100%; aspect-ratio: 1.15 / 1; object-fit: cover; display: block; }
 .cover--fallback { background: radial-gradient(circle at 30% 20%, rgba(240,190,100,.16), transparent 36%), linear-gradient(135deg, rgba(26,42,69,.8), rgba(8,13,24,.95)); }
+.cover--placeholder {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(240,190,100,.24), transparent 36%),
+    linear-gradient(135deg, rgba(26,42,69,.85), rgba(8,13,24,.96));
+  color: rgba(244, 216, 167, .9);
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 .body { padding: 12px 14px 0 14px; display: grid; gap: 4px; }
 .title { margin: 0; font-size: 23px; font-weight: 700; line-height: 1.06; }
 .meta { margin: 0; font-size: 13px; color: rgba(230,238,249,.72); }
 .metrics { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
 .metrics span { border-radius: 999px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: rgba(233,241,252,.82); padding: 6px 10px; font-size: 12px; }
+.empty-deal { gap: 0; }
+.empty-copy { display: grid; gap: 4px; padding: 12px 14px 14px; }
 .actions { padding: 12px 14px 14px 14px; display: flex; gap: 8px; flex-wrap: wrap; position: relative; z-index: 4; }
 .overflow { position: relative; }
 .overflow summary {
@@ -240,6 +262,5 @@ h1 { margin: 0; font-size: 28px; line-height: 1.06; letter-spacing: -0.02em; }
 .skeleton-list { display: grid; gap: 8px; }
 .skeleton { height: 210px; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); }
 .shimmer { background-image: linear-gradient(100deg, rgba(255,255,255,.03) 20%, rgba(255,255,255,.1) 50%, rgba(255,255,255,.03) 80%); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }
-.empty-card h2 { margin: 0; font-size: 22px; }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 </style>

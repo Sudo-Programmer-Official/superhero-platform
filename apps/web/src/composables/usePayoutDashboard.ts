@@ -1,7 +1,7 @@
 import { computed, ref } from "vue";
 import type { Booking } from "../domain/booking";
 import { formatPayoutMoney, type Payout, type PayoutStatus, type PayoutTransaction } from "../domain/payout";
-import { listBookings, listDeals } from "../services/api";
+import { listBookings, listDeals, listWalletPasses, type DealCardPayload, type WalletPassPayload } from "../services/api";
 import { sessionState } from "../stores/session";
 
 const PAGE_SIZE = 8;
@@ -22,6 +22,8 @@ export function usePayoutDashboard() {
   const payoutTrend = ref<number[]>([]);
   const payouts = ref<Payout[]>([]);
   const transactions = ref<PayoutTransaction[]>([]);
+  const deals = ref<DealCardPayload[]>([]);
+  const walletPasses = ref<WalletPassPayload[]>([]);
   const stripeState = ref({
     stripe_account_id: null as string | null,
     onboarding_state: "not_connected" as "not_connected" | "onboarding" | "connected" | "restricted",
@@ -58,6 +60,7 @@ export function usePayoutDashboard() {
   const availableBalance = computed(() => payouts.value.filter((p) => p.payout_status === "pending").reduce((sum, p) => sum + p.amount, 0));
   const pendingPayouts = computed(() => payouts.value.filter((p) => p.payout_status === "processing").reduce((sum, p) => sum + p.amount, 0));
   const totalRevenue = computed(() => grossRevenue.value);
+  const revenueByDeal = computed(() => buildDealRevenueCards(deals.value, transactions.value, walletPasses.value));
 
   const nextPayoutDate = computed(() => {
     const next = payouts.value.find((p) => p.payout_status === "pending" || p.payout_status === "processing");
@@ -65,13 +68,15 @@ export function usePayoutDashboard() {
   });
 
   const stripeBadge = computed(() => {
-    if (!stripeState.value.stripe_account_id) return { label: "Not connected", tone: "amber" as const, cta: "Connect Stripe" };
+    if (!stripeState.value.stripe_account_id) return { label: "Not connected", tone: "amber" as const, cta: "Connect Bank" };
     if (!stripeState.value.payouts_enabled || !stripeState.value.charges_enabled) {
       return { label: "Verification needed", tone: "red" as const, cta: "Complete Verification" };
     }
     if (stripeState.value.onboarding_state === "restricted") return { label: "Restricted", tone: "red" as const, cta: "Manage Stripe" };
     return { label: "Connected", tone: "green" as const, cta: "Manage Stripe" };
   });
+
+  const primaryActionLabel = computed(() => (stripeState.value.stripe_account_id ? "Withdraw" : "Connect Bank"));
 
   function formatMoney(value: number) {
     return formatPayoutMoney(value, "USD");
@@ -114,8 +119,14 @@ export function usePayoutDashboard() {
     error.value = "";
     try {
       if (!sessionState.token) throw new Error("Authentication session expired.");
-      const [bookings, deals] = await Promise.all([listBookings(sessionState.token), listDeals(sessionState.token)]);
-      transactions.value = buildTransactions(bookings, deals.map((d) => d.title));
+      const [bookings, dealList, passList] = await Promise.all([
+        listBookings(sessionState.token),
+        listDeals(sessionState.token),
+        listWalletPasses(sessionState.token)
+      ]);
+      deals.value = dealList;
+      walletPasses.value = passList;
+      transactions.value = buildTransactions(bookings, dealList);
       payouts.value = buildPayouts(transactions.value, sessionState.me?.practitioner_id || "unknown");
       revenueTrend.value = aggregateTrend(transactions.value.map((t) => t.gross));
       bookingsTrend.value = aggregateTrend(transactions.value.map((t) => 1));
@@ -158,8 +169,10 @@ export function usePayoutDashboard() {
     query,
     refunded,
     revenueTrend,
+    revenueByDeal,
     statusFilter,
     stripeBadge,
+    primaryActionLabel,
     stripeFees,
     stripeState,
     totalPages,
@@ -169,16 +182,17 @@ export function usePayoutDashboard() {
   };
 }
 
-function buildTransactions(bookings: Booking[], dealNames: string[]): PayoutTransaction[] {
+function buildTransactions(bookings: Booking[], deals: DealCardPayload[]): PayoutTransaction[] {
   return bookings.map((booking, index) => {
     const gross = Number(booking.total_amount || 0);
     const platform = Number((gross * 0.08).toFixed(2));
     const stripe = Number((gross * 0.029 + 0.3).toFixed(2));
     const net = Number((gross - platform - stripe).toFixed(2));
+    const deal = deals.find((item) => item.id === booking.deal_id);
     return {
       id: booking.id,
       customer: booking.customer_name || booking.customer_email,
-      deal: dealNames[index % Math.max(1, dealNames.length)] || `Deal ${booking.deal_id.slice(0, 6)}`,
+      deal: deal?.title || `Deal ${booking.deal_id.slice(0, 6)}`,
       gross,
       platform_fees: platform,
       stripe_fees: stripe,
@@ -188,6 +202,115 @@ function buildTransactions(bookings: Booking[], dealNames: string[]): PayoutTran
       created_at: booking.created_at
     };
   });
+}
+
+type DealRevenueCard = {
+  id: string;
+  slug: string;
+  title: string;
+  cover: string | null;
+  currency: string;
+  revenue: number;
+  gross: number;
+  fees: number;
+  net: number;
+  claimed: number;
+  redeemed: number;
+  latest_activity_at: string;
+  customers: Array<{
+    id: string;
+    name: string;
+    email: string;
+    amount: number;
+    status: string;
+    booked_at: string;
+  }>;
+  transactions: Array<{
+    id: string;
+    booking_number: string;
+    customer: string;
+    amount: number;
+    payment_status: string;
+    redemption_status: string;
+    booked_at: string;
+  }>;
+};
+
+function buildDealRevenueCards(deals: DealCardPayload[], bookings: Booking[], passes: WalletPassPayload[]): DealRevenueCard[] {
+  const passesByDeal = new Map<string, WalletPassPayload[]>();
+  for (const pass of passes) {
+    const bucket = passesByDeal.get(pass.deal_id) || [];
+    bucket.push(pass);
+    passesByDeal.set(pass.deal_id, bucket);
+  }
+
+  const bookingsByDeal = new Map<string, Booking[]>();
+  for (const booking of bookings) {
+    const bucket = bookingsByDeal.get(booking.deal_id) || [];
+    bucket.push(booking);
+    bookingsByDeal.set(booking.deal_id, bucket);
+  }
+
+  return deals
+    .map((deal) => {
+      const dealBookings = (bookingsByDeal.get(deal.id) || []).slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const dealPasses = passesByDeal.get(deal.id) || [];
+      const redeemed = dealPasses.filter((pass) => (pass.pass_status || pass.redemption_status || "").toLowerCase() === "redeemed").length;
+      const claimed = dealPasses.length;
+      const paidBookings = dealBookings.filter((booking) => booking.payment_status === "paid");
+      const gross = paidBookings.reduce((sum, booking) => sum + booking.total_amount, 0);
+      const fees = dealBookings.reduce((sum, booking) => sum + booking.fee_amount, 0);
+      const refunded = dealBookings.filter((booking) => booking.payment_status === "refunded").reduce((sum, booking) => sum + booking.total_amount, 0);
+      const revenue = gross - refunded;
+      const net = revenue - fees;
+      const latestActivity = [deal.created_at, ...dealBookings.map((booking) => booking.created_at), ...dealPasses.map((pass) => pass.created_at)]
+        .filter(Boolean)
+        .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || deal.created_at;
+
+      const customers = Array.from(
+        new Map(
+          dealBookings.map((booking) => [
+            booking.customer_email,
+            {
+              id: booking.customer_id,
+              name: booking.customer_name || booking.customer_email,
+              email: booking.customer_email,
+              amount: booking.total_amount,
+              status: `${booking.payment_status} · ${booking.redemption_status}`,
+              booked_at: booking.booked_at
+            }
+          ])
+        ).values()
+      ).slice(0, 5);
+
+      const transactions = dealBookings.slice(0, 8).map((booking) => ({
+        id: booking.id,
+        booking_number: booking.booking_number,
+        customer: booking.customer_name || booking.customer_email,
+        amount: booking.total_amount,
+        payment_status: booking.payment_status,
+        redemption_status: booking.redemption_status,
+        booked_at: booking.booked_at
+      }));
+
+      return {
+        id: deal.id,
+        slug: deal.slug,
+        title: deal.title,
+        cover: deal.cover_image || deal.image || null,
+        currency: deal.currency || "USD",
+        revenue,
+        gross,
+        fees,
+        net,
+        claimed,
+        redeemed,
+        latest_activity_at: latestActivity,
+        customers,
+        transactions
+      };
+    })
+    .sort((a, b) => new Date(b.latest_activity_at).getTime() - new Date(a.latest_activity_at).getTime());
 }
 
 function buildPayouts(transactions: PayoutTransaction[], practitionerId: string): Payout[] {

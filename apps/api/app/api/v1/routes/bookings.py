@@ -12,7 +12,7 @@ router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 @router.get("", response_model=list[BookingRead])
 async def list_bookings(
-    _: AccessContext = Depends(require_tenant_access("super_admin", "admin", "practitioner")),
+    access: AccessContext = Depends(require_tenant_access("super_admin", "admin", "practitioner")),
     session: AsyncSession = Depends(get_db_session),
 ):
-    return await BookingService(session).list_bookings()
+    return await BookingService(session).list_bookings(access)

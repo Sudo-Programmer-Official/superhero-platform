@@ -15,6 +15,13 @@ class BookingRepository:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def list_by_practitioner(self, practitioner_id: UUID) -> list[Booking]:
+        stmt: Select[tuple[Booking]] = (
+            select(Booking).where(Booking.practitioner_id == practitioner_id).order_by(Booking.booked_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def get(self, booking_id: UUID) -> Booking | None:
         return await self.session.get(Booking, booking_id)
 
